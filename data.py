@@ -1,6 +1,10 @@
 from torchvision import transforms
 from torchvision.datasets import CIFAR10, CIFAR100
 
+import os
+import numpy as np
+import pandas as pd
+
 
 
 def get_cifar(dataset: str='cifar10', path: str='data'):
@@ -36,5 +40,27 @@ def get_cifar(dataset: str='cifar10', path: str='data'):
     return train_dataset, test_dataset
 
 
+def generate_noisy_labels(dataset='cifar10', path='./data', noise_mode='sym', noise_rate=0.4):
+    train_dataset, _ = get_cifar(dataset, path)
+    clean_labels = train_dataset.targets
+    noisy_labels = []
+
+    min_class = min(clean_labels)
+    max_class = max(clean_labels)
+
+    np.random.seed(42)
+    if noise_mode == 'sym':
+        for label in clean_labels:
+            if np.random.uniform() < noise_rate:
+                while (new_label := np.random.randint(low=min_class, high=max_class+1)) == label:
+                    continue
+                noisy_labels.append(new_label)
+            else:
+                noisy_labels.append(label)
+    labels = pd.DataFrame({'clean': clean_labels, 'noisy': noisy_labels})
+    print('Rate of noisy labels: {}'.format((labels.clean != labels.noisy).sum() / labels.shape[0]))
+    labels.to_csv(os.path.join(path, 'noisy_labels_' + dataset + '_' + noise_mode + '_' + str(noise_rate) + '.csv'))
+
+
 if __name__ == '__main__':
-    tr, ts = get_cifar()
+    generate_noisy_labels(dataset='cifar100')
