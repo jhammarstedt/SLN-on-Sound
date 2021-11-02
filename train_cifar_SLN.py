@@ -6,6 +6,8 @@ import torch.nn.functional as F
 import torchvision
 import torchvision.transforms as transforms
 
+from data import get_cifar
+
 args = {
     'runs': 5,
     'epochs': 2,
@@ -62,16 +64,12 @@ ema_optimizer = WeightEMA(net, ema_net)
 
 # Import datasets: Cifar-10, Cifar-100
 
-train_transform = transforms.Compose([transforms.RandomCrop(32, padding=4), transforms.RandomHorizontalFlip(), transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))])
-test_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))])
-
-trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=train_transform)
+trainset, testset = get_cifar(dataset='cifar10')
 train_loader = torch.utils.data.DataLoader(trainset, batch_size=4, shuffle=True, num_workers=2)
 
-testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=test_transform)
 test_loader = torch.utils.data.DataLoader(testset, batch_size=4, shuffle=False, num_workers=2)
 
-classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+classes = trainset.classes
 
 # Add noise to labels
 
