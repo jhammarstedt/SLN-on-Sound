@@ -21,36 +21,34 @@ def conv_init(m): # m is a conv layer
 
 
 class wide_block(nn.Module):
-    def __init__(self,in_planes,planes,dropout_rate,stride=1):
+    def __init__(self,in_planes,planes,stride=1):
         super().__init__()
-        
+
         self.batchnorm1 = nn.BatchNorm2d(in_planes)
         self.Conv1 = nn.Conv2d(in_planes,planes,kernel_size=3,padding=1,bias=True)
-        
-        self.dropout_rate = dropout_rate
-        if self.dropout_rate>0:
-            self.dropout = nn.Dropout(p=self.dropout_rate)
+
         self.batchnorm2 = nn.BatchNorm2d(planes)
-        self.Conv2 = nn.Conv2d(planes,planes,kernel_size=3,padding=1,bias=True)
+        self.Conv2 = nn.Conv2d(planes,planes,kernel_size=3,stride=stride,padding=1,bias=True)
 
         self.shortcut = nn.Sequential()
+
+        # Skip connection has to scale dimensions
         if stride !=1 or in_planes != planes: #if stride is not 1 or the number of input planes is not equal to the number of output planes
-            self.shortcut= nn.sequential(nn.Conv2d(in_planes,planes,kernel_size=1,stride=stride,bias=True))
+            self.shortcut= nn.Sequential(nn.Conv2d(in_planes,planes,kernel_size=1,stride=stride,bias=True))
 
     def forward(self,x):
-        out = self.Conv1(F.relu(self.batchnorm1(x))) #First layer with activation and batchnorm 
-        if self.dropout_rate>0: #dropout
-            out = self.dropout(out)
+        out = self.Conv1(F.relu(self.batchnorm1(x))) #First layer with activation and batchnorm
         out = self.Conv2(F.relu(self.batchnorm2(out))) #Second layer with activation and batchnorm
+        skip = self.shortcut(x)
         out += self.shortcut(x) #shortcut connection for the resnet
         return out
 
 class Wide_ResNet(nn.Module):
-    def __init__(self,dropout_rate = 0,depth=28, widen_factor=2,num_classes=10):
+    def __init__(self, depth=28, widen_factor=2, num_classes=10):
         super().__init__() # call the parent class constructor
         self.in_planes= 16 # number of input channels
         assert ((depth-4)%6 ==0), 'Wide-resnet depth should be 6n+4'
-        n_blocks = (depth-4)/6 # number of blocks
+        n_blocks = (depth-4)//6 # number of blocks
         k = widen_factor # width factor
         print('| Wide-ResNet %dx%d' %(depth,k)) # print the network configuration
         nStages = [16, 16*k, 32*k, 64*k] # number of convolutional layers at each stage
@@ -68,16 +66,16 @@ class Wide_ResNet(nn.Module):
         for stride in strides: # for each block
             layers.append(block(self.in_planes,planes,stride)) # add the block
             self.in_planes = planes # update the number of input channels
-        
+
         return nn.Sequential(*layers) # return the block
-    
+
     def forward(self,x,get_feat=False):
         out = self.Conv1(x)
         out = self.L1(out)
         out = self.L2(out)
         out = self.L3(out)
         out = F.relu(self.batchnorm1(out))
-        out  = F.avg_pool2d(out,8) # average pooling
+        out = F.avg_pool2d(out,8) # average pooling
         out = out.view(out.size(0),-1) # flatten the output
 
         if get_feat: # if get_feat is true
