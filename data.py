@@ -6,8 +6,12 @@ import numpy as np
 import pandas as pd
 
 
+def get_cifar(dataset: str = 'cifar10',
+              path: str = './data',
+              labels_path: str = './labels',
+              noise_mode: str = 'sym',
+              noise_rate: float = 0.4):
 
-def get_cifar(dataset: str='cifar10', path: str='data'):
     train_dataset = None
     test_dataset = None
     if dataset == 'cifar10':
@@ -37,11 +41,28 @@ def get_cifar(dataset: str='cifar10', path: str='data'):
     else:
         raise NotImplementedError(f'Dataset {dataset} is not supported ATM')
 
+    noisy_labels_path = os.path.join(labels_path, 'noisy_labels_' + dataset + '_' + noise_mode + '_' + str(noise_rate) + '.csv')
+
+    if noise_mode == '':
+        print('Getting clean dataset')
+
+    elif noise_mode in ['asym', 'sym']:
+        print(f'Getting dataset with {noise_mode}metric noise')
+        if not os.path.exists(noisy_labels_path):
+            generate_noisy_labels(dataset, labels_path, noise_mode, noise_rate, train_dataset=train_dataset)
+
+        labels = pd.read_csv(noisy_labels_path, index_col=None)
+        train_dataset.targets = labels['noisy'].to_list()
+
+    else:
+        raise NotImplementedError('Unknown noise mode')
+
     return train_dataset, test_dataset
 
 
-def generate_noisy_labels(dataset='cifar10', path='./data', noise_mode='sym', noise_rate=0.4):
-    train_dataset, _ = get_cifar(dataset, path)
+def generate_noisy_labels(dataset='cifar10', path='./labels', noise_mode='sym', noise_rate=0.4, train_dataset=None):
+    if train_dataset is None:
+        train_dataset, _ = get_cifar(dataset)
     clean_labels = train_dataset.targets
     noisy_labels = []
 
@@ -52,15 +73,46 @@ def generate_noisy_labels(dataset='cifar10', path='./data', noise_mode='sym', no
     if noise_mode == 'sym':
         for label in clean_labels:
             if np.random.uniform() < noise_rate:
-                while (new_label := np.random.randint(low=min_class, high=max_class+1)) == label:
+                while (new_label := np.random.randint(low=min_class, high=max_class + 1)) == label:
                     continue
                 noisy_labels.append(new_label)
             else:
                 noisy_labels.append(label)
+
+    elif noise_mode == 'asym':
+        if dataset == 'cifar10':
+            # Only similar labels are flipped
+            # labels = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+            # number on each index corresponds to which class it should be switched
+            # TRUCK → AUTOMOBILE, BIRD → AIRPLANE, DEER → HORSE, and CAT ↔ DOG
+            label_mapping = [0, 1, 0, 5, 7, 3, 6, 7, 8, 1]
+            for label in clean_labels:
+                if np.random.uniform() < noise_rate:
+                    noisy_labels.append(label_mapping[label])
+                else:
+                    noisy_labels.append(label)
+
+        elif dataset == 'cifar100':
+            # Labels are flipped in circularly (0->1, 1->2, ..., 9->0)
+            N_labels = len(train_dataset.classes)
+            for label in clean_labels:
+                if np.random.uniform() < noise_rate:
+                    noisy_labels.append((label + 1) % N_labels)
+                else:
+                    noisy_labels.append(label)
+
+        else:
+            raise NotImplementedError
+
+    else:
+        raise NotImplementedError
+
     labels = pd.DataFrame({'clean': clean_labels, 'noisy': noisy_labels})
     print('Rate of noisy labels: {}'.format((labels.clean != labels.noisy).sum() / labels.shape[0]))
-    labels.to_csv(os.path.join(path, 'noisy_labels_' + dataset + '_' + noise_mode + '_' + str(noise_rate) + '.csv'))
+    labels.to_csv(os.path.join(path, 'noisy_labels_' + dataset + '_' + noise_mode + '_' + str(noise_rate) + '.csv'),
+                  index=False)
 
 
 if __name__ == '__main__':
-    generate_noisy_labels(dataset='cifar100')
+    train, test = get_cifar(dataset='cifar10', noise_mode='asym')
+    print()
