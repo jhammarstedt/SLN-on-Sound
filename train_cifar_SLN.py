@@ -1,6 +1,7 @@
 from sys import platform
 import argparse
 import time
+import numpy as np
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
@@ -32,6 +33,29 @@ class WeightEMA(object):
                 ema_param.mul_(self.alpha)
                 ema_param.add_(param * one_minus_alpha)
 
+# Get output
+def get_output(model, device, loader):
+    softmax = []
+    losses = []
+    model.eval()
+
+    with torch.no_grad():
+        for data, target in loader:
+            data, target = data.to(device), target.to(device)
+            output = model(data)
+
+            if len(target.size()) == 1:
+                loss = F.cross_entropy(output, target, reduction="none")
+            else:
+                loss = -torch.sum(F.log_softmax(output, dim=1) * target, dim=1)
+
+            output = F.softmax(output, dim=1)
+
+            losses.append(loss.cpu().numpy())
+            softmax.append(output.cpu().numpy())
+
+    return np.concatenate(softmax), np.concatenate(losses)
+
 # Train on Wide ResNet-28-2
 def train(args, model, device, loader, optimizer, epoch, ema_optimizer):
     model.train()
@@ -45,7 +69,7 @@ def train(args, model, device, loader, optimizer, epoch, ema_optimizer):
 
         data, target = data.to(device), target.to(device)
 
-        # SLN?
+        # SLN
         if args['sigma'] > 0:
             target += args['sigma'] * torch.randn(target.size(), device=device)
 
@@ -106,7 +130,7 @@ def run():
         'momentum': 0.9,
         'weight_decay': 5e-4,
         'batch_size': 128,
-        'correction': 250,
+        'correction': 1,
         'num_class': 1,
 
         'gpu_id': 0,
@@ -126,7 +150,11 @@ def run():
     trainset, testset = get_cifar(dataset='cifar10')
     train_loader = torch.utils.data.DataLoader(trainset, batch_size=args['batch_size'], shuffle=True, num_workers=1)
     test_loader = torch.utils.data.DataLoader(testset, batch_size=args['batch_size'], shuffle=False, num_workers=1)
+    train_eval_loader = torch.utils.data.DataLoader(trainset, batch_size=args['batch_size'], shuffle=False, num_workers=1)
     args['num_class'] = len(trainset.classes)
+
+    noisy_targets = trainset.targets
+    noisy_targets = np.eye(args['num_class'])[noisy_targets]
 
     # Wide ResNet28-2 model
     model = Wide_ResNet(num_classes=args['num_class']).cuda()
@@ -147,8 +175,17 @@ def run():
 
         # Label Correction on 250th epoch, without tuning
         if epoch > args['correction']:
-            args['sigma'] = 0
-            # TODO
+            args['sigma'] = 0 # Stop SLN
+
+            output, losses = get_output(ema_model, device, train_eval_loader)
+            output = np.eye(args['num_class'])[output.argmax(axis=1)] # Predictions
+
+            losses = (losses - min(losses)) / (max(losses) - min(losses)) # Normalize to range [0, 1]
+            losses = losses.reshape([len(losses), 1])
+
+            targets = losses * noisy_targets + (1 - losses) * output # Label correction
+            trainset.targets = targets
+            train_loader = torch.utils.data.DataLoader(trainset, batch_size=args['batch_size'], shuffle=True, num_workers=1)
 
         _, train_acc = train(args, model, device, train_loader, optimizer, epoch, ema_optimizer)
         _, test_acc = test(args, ema_model, device, test_loader)
