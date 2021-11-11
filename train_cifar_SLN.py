@@ -120,7 +120,7 @@ def test(args, model, device, loader, criterion=F.cross_entropy):
     # Return average test loss and test accuracy
     return test_loss.item() / len(loader.dataset), correct.item() / len(loader.dataset)
 
-def run():
+def run(workers=2):
     args = {
         'runs': 5,
         'epochs': 2,
@@ -148,9 +148,9 @@ def run():
 
     # Import datasets: Cifar-10, Cifar-100
     trainset, testset = get_cifar(dataset='cifar10')
-    train_loader = torch.utils.data.DataLoader(trainset, batch_size=args['batch_size'], shuffle=True, num_workers=1)
-    test_loader = torch.utils.data.DataLoader(testset, batch_size=args['batch_size'], shuffle=False, num_workers=1)
-    train_eval_loader = torch.utils.data.DataLoader(trainset, batch_size=args['batch_size'], shuffle=False, num_workers=1)
+    train_loader = torch.utils.data.DataLoader(trainset, batch_size=args['batch_size'], shuffle=True, num_workers=workers)
+    test_loader = torch.utils.data.DataLoader(testset, batch_size=args['batch_size'], shuffle=False, num_workers=workers)
+    train_eval_loader = torch.utils.data.DataLoader(trainset, batch_size=args['batch_size'], shuffle=False, num_workers=workers)
     args['num_class'] = len(trainset.classes)
 
     noisy_targets = trainset.targets
@@ -200,6 +200,8 @@ def run():
 
 
 if __name__ == '__main__':
+    workers = 2
     if platform == 'win32':
         torch.multiprocessing.freeze_support()
+        workers = 1
     run()
