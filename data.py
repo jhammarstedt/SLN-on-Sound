@@ -73,8 +73,9 @@ def generate_noisy_labels(dataset='cifar10', path='./labels', noise_mode='sym', 
     if noise_mode == 'sym':
         for label in clean_labels:
             if np.random.uniform() < noise_rate:
-                while (new_label := np.random.randint(low=min_class, high=max_class + 1)) == label:
-                    continue
+                new_label = np.random.randint(low=min_class, high=max_class + 1)
+                while new_label == label:
+                    new_label = np.random.randint(low=min_class, high=max_class + 1)
                 noisy_labels.append(new_label)
             else:
                 noisy_labels.append(label)
