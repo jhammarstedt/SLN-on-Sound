@@ -1,6 +1,7 @@
 from sys import platform
 import argparse
 import time
+import json
 import numpy as np
 import torch
 import torch.optim as optim
@@ -120,10 +121,20 @@ def test(args, model, device, loader, criterion=F.cross_entropy):
     # Return average test loss and test accuracy
     return test_loss.item() / len(loader.dataset), correct.item() / len(loader.dataset)
 
+def save_log(log, train_loss, train_acc, test_loss, test_acc, test_loss_NoEMA, test_acc_NoEMA):
+    log['train_loss'].append(train_loss)
+    log['train_acc'].append(train_acc)
+    log['test_loss'].append(test_loss)
+    log['test_acc'].append(test_acc)
+    log['test_loss_NoEMA'].append(test_loss_NoEMA)
+    log['test_acc_NoEMA'].append(test_acc_NoEMA)
+
+    return log
+
 def run(workers=2):
     args = {
         'runs': 5,
-        'epochs': 2,
+        'epochs': 300,
         'stdev': 0.5,
         'lr': 0.001,
         'noise_rate': 0.4,
@@ -168,6 +179,15 @@ def run(workers=2):
     optimizer = optim.SGD(model.parameters(), lr=args['lr'], momentum=args['momentum'], weight_decay=args['weight_decay'])
     ema_optimizer = WeightEMA(model, ema_model)
 
+    log = {
+        'train_loss': [],
+        'train_acc': [],
+        'test_loss': [],
+        'test_acc': [],
+        'test_loss_NoEMA': [],
+        'test_acc_NoEMA': []
+    }
+
     # Training loop
     total_t0 = time.time()
     for epoch in range(1, args['epochs']+1):
@@ -187,16 +207,32 @@ def run(workers=2):
             trainset.targets = targets
             train_loader = torch.utils.data.DataLoader(trainset, batch_size=args['batch_size'], shuffle=True, num_workers=1)
 
-        _, train_acc = train(args, model, device, train_loader, optimizer, epoch, ema_optimizer)
-        _, test_acc = test(args, ema_model, device, test_loader)
-        _, test_acc_NoEMA = test(args, model, device, test_loader)
+        train_loss, train_acc = train(args, model, device, train_loader, optimizer, epoch, ema_optimizer)
+        test_loss, test_acc = test(args, ema_model, device, test_loader)
+        test_loss_NoEMA, test_acc_NoEMA = test(args, model, device, test_loader)
+        log = save_log(log, train_loss, train_acc, test_loss, test_acc, test_loss_NoEMA, test_acc_NoEMA)
         print('\nEpoch: {} Time: {:.1f}s.\n'.format(epoch, time.time()-t0))
-
 
     print('\nTotal training time: {:.1f}s.\n'.format(time.time()-total_t0))
 
+    try:
+        torch.save(model.state_dict(), 'model_state')
+        print('Successfully saved model params')
+    except:
+        print('Failed to save model params')
 
-# Show results
+    try:
+        torch.save(ema_model.state_dict(), 'ema_model_state')
+        print('Successfully saved ema_model params')
+    except:
+        print('Failed to save ema_model params')
+
+    try:
+        with open('training_log.json', 'w') as f:
+            json.dump(log, f)
+        print('Successfully saved training log')
+    except:
+        print('Failed to save training log')
 
 
 if __name__ == '__main__':
