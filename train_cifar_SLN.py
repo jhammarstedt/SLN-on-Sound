@@ -141,7 +141,7 @@ def run(workers=2):
         'momentum': 0.9,
         'weight_decay': 5e-4,
         'batch_size': 128,
-        'correction': 1,
+        'correction': 250,
         'num_class': 1,
 
         'gpu_id': 0,
