@@ -121,6 +121,7 @@ def test(args, model, device, loader, criterion=F.cross_entropy):
     # Return average test loss and test accuracy
     return test_loss.item() / len(loader.dataset), correct.item() / len(loader.dataset)
 
+
 def save_log(log, train_loss, train_acc, test_loss, test_acc, test_loss_NoEMA, test_acc_NoEMA):
     log['train_loss'].append(train_loss)
     log['train_acc'].append(train_acc)
@@ -128,8 +129,8 @@ def save_log(log, train_loss, train_acc, test_loss, test_acc, test_loss_NoEMA, t
     log['test_acc'].append(test_acc)
     log['test_loss_NoEMA'].append(test_loss_NoEMA)
     log['test_acc_NoEMA'].append(test_acc_NoEMA)
-
     return log
+
 
 def run(workers=2):
     args = {
@@ -155,6 +156,7 @@ def run(workers=2):
     }
 
     device = torch.device('cuda:'+str(args['gpu_id']) if torch.cuda.is_available() else 'cpu')
+    print(f'Using {device} for training')
     torch.cuda.set_device(args['gpu_id'])
 
     # Import datasets: Cifar-10, Cifar-100
@@ -211,7 +213,8 @@ def run(workers=2):
         test_loss, test_acc = test(args, ema_model, device, test_loader)
         test_loss_NoEMA, test_acc_NoEMA = test(args, model, device, test_loader)
         log = save_log(log, train_loss, train_acc, test_loss, test_acc, test_loss_NoEMA, test_acc_NoEMA)
-        print('\nEpoch: {} Time: {:.1f}s.\n'.format(epoch, time.time()-t0))
+        print('\nEpoch: {} Time: {:.1f}s.'.format(epoch, time.time()-t0))
+        print('Train loss:\t{:.3f}\tTest loss:\t{:.3f}\tTest loss NoEMA:\t{:.3f}\t'.format(train_loss, test_loss, test_loss_NoEMA))
 
     print('\nTotal training time: {:.1f}s.\n'.format(time.time()-total_t0))
 
