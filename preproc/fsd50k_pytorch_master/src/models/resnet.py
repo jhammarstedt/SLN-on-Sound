@@ -3,7 +3,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from src.models.netvlad import NetVLAD
+from preproc.fsd50k_pytorch_master.src.models.netvlad import NetVLAD
 
 
 def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
