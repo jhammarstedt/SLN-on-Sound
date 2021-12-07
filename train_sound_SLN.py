@@ -259,10 +259,11 @@ def run(args, workers=2):
 
     # load data
     train_loader, test_loader, train_eval_loader, trainset, testset = load_data(args)
-    print(trainset)
-    args.num_class = len(trainset.classes)
 
-    noisy_targets = trainset.targets
+    args.num_class = args.cfg['model']['num_classes']
+    print(f'Number of classes: {args.num_class}')
+
+    noisy_targets = trainset.labels
     noisy_targets = np.eye(args.num_class)[noisy_targets]
 
     # Wide ResNet28-2 model
