@@ -12,12 +12,6 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 
 import preproc.fsd50k_pytorch_master.src.data.mixers as mixers
-<<<<<<< HEAD
-#from preproc.fsd50k_pytorch_master.src.models.fsd50k_lightning import FSD50k_Lightning
-=======
-from preproc.fsd50k_pytorch_master.src.data.dataset import SpectrogramDataset
-from preproc.fsd50k_pytorch_master.src.data.fsd_eval_dataset import FSD50kEvalDataset, _collate_fn_eval
->>>>>>> 3c03681426d57b866f6c0cdeb370aa826f8290f9
 from preproc.fsd50k_pytorch_master.src.data.transforms import get_transforms_fsd_chunks
 from preproc.fsd50k_pytorch_master.src.data.utils import _collate_fn_multiclass, _collate_fn
 from preproc.fsd50k_pytorch_master.src.utilities.config_parser import parse_config, get_data_info
