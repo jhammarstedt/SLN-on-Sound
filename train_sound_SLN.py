@@ -264,6 +264,7 @@ def run(args, workers=2):
     print(f'Number of classes: {args.num_class}')
 
     noisy_targets = trainset.labels
+    print(noisy_targets)
     noisy_targets = np.eye(args.num_class)[noisy_targets]
 
     # Wide ResNet28-2 model
