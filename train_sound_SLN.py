@@ -1,37 +1,33 @@
-from sys import platform
 import argparse
-import time
 import json
-import numpy as np
-import torch
-import torch.optim as optim
-import torch.nn.functional as F
-import torchvision
-import torchvision.transforms as transforms
-from resnet import Wide_ResNet
-
 # New code
 import os
-import pytorch_lightning as pl
-from pytorch_lightning.loggers import TensorBoardLogger
-import preproc.fsd50k_pytorch_master.src.data.mixers as mixers
-#from preproc.fsd50k_pytorch_master.src.models.fsd50k_lightning import FSD50k_Lightning
-from preproc.fsd50k_pytorch_master.src.data.transforms import get_transforms_fsd_chunks
-from preproc.fsd50k_pytorch_master.src.utilities.config_parser import parse_config, get_data_info
-from preproc.fsd50k_pytorch_master.src.data.dataset import SpectrogramDataset
-from preproc.fsd50k_pytorch_master.src.data.fsd_eval_dataset import FSD50kEvalDataset,_collate_fn_eval
+import time
+from sys import platform
+
+import numpy as np
+import torch
+import torch.nn.functional as F
+import torch.optim as optim
 from torch.utils.data import DataLoader
 
-from preproc.fsd50k_pytorch_master.src.data.utils import _collate_fn_multiclass,_collate_fn
+import preproc.fsd50k_pytorch_master.src.data.mixers as mixers
+<<<<<<< HEAD
+#from preproc.fsd50k_pytorch_master.src.models.fsd50k_lightning import FSD50k_Lightning
+=======
+from preproc.fsd50k_pytorch_master.src.data.dataset import SpectrogramDataset
+from preproc.fsd50k_pytorch_master.src.data.fsd_eval_dataset import FSD50kEvalDataset, _collate_fn_eval
+>>>>>>> 3c03681426d57b866f6c0cdeb370aa826f8290f9
+from preproc.fsd50k_pytorch_master.src.data.transforms import get_transforms_fsd_chunks
+from preproc.fsd50k_pytorch_master.src.data.utils import _collate_fn_multiclass, _collate_fn
+from preproc.fsd50k_pytorch_master.src.utilities.config_parser import parse_config, get_data_info
+from resnet import Wide_ResNet
 
 parser = argparse.ArgumentParser()
 parser.description = "Training script for FSD50k baselines"
-parser.add_argument("--cfg_file", type=str,
-                    help='path to cfg file')
-parser.add_argument("--expdir", "-e", type=str,
-                    help="directory for logging and checkpointing")
-parser.add_argument('--epochs', default=300, type=int, metavar='N',
-                    help='number of total epochs to run')
+parser.add_argument("--cfg_file", type=str, help='path to cfg file')
+parser.add_argument("--expdir", "-e", type=str, help="directory for logging and checkpointing")
+parser.add_argument('--epochs', default=300, type=int, metavar='N', help='number of total epochs to run')
 parser.add_argument("--num_workers", type=int, default=4)
 parser.add_argument("--cw", type=str, required=False,
                     help="path to serialized torch tensor containing class weights")
@@ -48,7 +44,7 @@ parser.add_argument("--runs", type=int, default=5,
                     help="...")
 
 parser.add_argument("--lr", type=float, default=0.001,
-                    help="learning rate")                    
+                    help="learning rate")
 parser.add_argument("--stdev", type=float, default=0.5,
                     help="How much added noise")
 parser.add_argument("--momentum", type=float, default=0.9,
@@ -56,15 +52,16 @@ parser.add_argument("--momentum", type=float, default=0.9,
 parser.add_argument("--weight_decay", type=float, default=5e-4,
                     help="...")
 parser.add_argument("--batch_size", type=int, default=128,
-    help="...")
+                    help="...")
 parser.add_argument("--correction", type=int, default=250,
-    help="...")
+                    help="...")
 parser.add_argument("--num_class", type=int, default=1,
-    help="...")
+                    help="...")
 parser.add_argument("--gpu_id", type=int, default=0,
-    help="...")
+                    help="...")
 parser.add_argument("--sigma", type=int, default=1,
-    help=" for cifar 10: 1 == symmetric, 0.5 == asymetric")
+                    help=" for cifar 10: 1 == symmetric, 0.5 == asymetric")
+
 
 # Weight Exponential Moving Average
 class WeightEMA(object):
@@ -79,14 +76,15 @@ class WeightEMA(object):
         for param, ema_param in zip(self.params, self.ema_params):
             param.data.copy_(ema_param.data)
 
-    def step(self): # update moving average
+    def step(self):  # update moving average
         one_minus_alpha = 1.0 - self.alpha
         for param, ema_param in zip(self.params, self.ema_params):
-            if param.type()=='torch.cuda.LongTensor':
+            if param.type() == 'torch.cuda.LongTensor':
                 ema_param = param
             else:
                 ema_param.mul_(self.alpha)
                 ema_param.add_(param * one_minus_alpha)
+
 
 # Get output
 def get_output(model, device, loader):
@@ -111,6 +109,7 @@ def get_output(model, device, loader):
 
     return np.concatenate(softmax), np.concatenate(losses)
 
+
 # Train on Wide ResNet-28-2
 def train(args, model, device, loader, optimizer, epoch, ema_optimizer):
     model.train()
@@ -120,7 +119,7 @@ def train(args, model, device, loader, optimizer, epoch, ema_optimizer):
     for data, target in loader:
         # One-hot encode single-digit labels
         if len(target.size()) == 1:
-            target = torch.zeros(target.size(0), args['num_class']).scatter_(1, target.view(-1,1), 1)
+            target = torch.zeros(target.size(0), args['num_class']).scatter_(1, target.view(-1, 1), 1)
 
         data, target = data.to(device), target.to(device)
 
@@ -130,7 +129,7 @@ def train(args, model, device, loader, optimizer, epoch, ema_optimizer):
 
         # Calculate loss
         output = model(data)
-        loss = -torch.mean(torch.sum(F.log_softmax(output, dim=1)*target, dim=1))
+        loss = -torch.mean(torch.sum(F.log_softmax(output, dim=1) * target, dim=1))
 
         # Update weights
         optimizer.zero_grad()
@@ -154,6 +153,7 @@ def train(args, model, device, loader, optimizer, epoch, ema_optimizer):
 
     # Return epoch-average loss and accuracy
     return train_loss.item() / len(loader.dataset), correct.item() / len(loader.dataset)
+
 
 # Test loss and accuracy
 def test(args, model, device, loader, criterion=F.cross_entropy):
@@ -185,18 +185,19 @@ def save_log(log, train_loss, train_acc, test_loss, test_acc, test_loss_NoEMA, t
     log['test_acc_NoEMA'].append(test_acc_NoEMA)
     return log
 
-def train_dataloader(train_set,args,collate_fn,shuffle):
-        return DataLoader(train_set, num_workers=args.num_workers, shuffle=shuffle,
-                          sampler=None, collate_fn=collate_fn,
-                          batch_size=args.cfg['opt']['batch_size'],
-                          pin_memory=False, drop_last=True)
 
-def val_dataloader(val_set,args,collate_fn,shuffle):
+def train_dataloader(train_set, args, collate_fn, shuffle):
+    return DataLoader(train_set, num_workers=args.num_workers, shuffle=shuffle,
+                      sampler=None, collate_fn=collate_fn,
+                      batch_size=args.cfg['opt']['batch_size'],
+                      pin_memory=False, drop_last=True)
+
+
+def val_dataloader(val_set, args, shuffle):
     return DataLoader(val_set, sampler=None, num_workers=args.num_workers,
-                        collate_fn=_collate_fn_eval,
-                        shuffle=shuffle, batch_size=1,
-                        pin_memory=False)
-
+                      collate_fn=_collate_fn_eval,
+                      shuffle=shuffle, batch_size=1,
+                      pin_memory=False)
 
 
 def load_data(args):
@@ -219,26 +220,24 @@ def load_data(args):
         raise ValueError("Model type not supported")
 
     trainset = SpectrogramDataset(args.cfg['data']['train'],
-                                                args.cfg['data']['labels'],
-                                                args.cfg['audio_config'],
-                                                mode=mode, augment=True,
-                                                mixer=args.tr_mixer,
-                                                transform=args.tr_tfs)
+                                  args.cfg['data']['labels'],
+                                  args.cfg['audio_config'],
+                                  mode=mode, augment=True,
+                                  mixer=args.tr_mixer,
+                                  transform=args.tr_tfs)
     testset = FSD50kEvalDataset(args.cfg['data']['val'], args.cfg['data']['labels'],
-                                        args.cfg['audio_config'],
-                                        transform=args.val_tfs
-                                        )
+                                args.cfg['audio_config'],
+                                transform=args.val_tfs
+                                )
 
-    train_loader = train_dataloader(trainset,args=args,collate_fn=collate_fn,shuffle=True)
-    test_loader = val_dataloader(testset,args=args,shuffle=False)
-    train_eval_loader = train_dataloader(trainset,args=args,shuffle=False)
+    train_loader = train_dataloader(trainset, args=args, collate_fn=collate_fn, shuffle=True)
+    test_loader = val_dataloader(testset, args=args, shuffle=False)
+    train_eval_loader = train_dataloader(trainset, args=args, shuffle=False)
 
-    return train_loader,test_loader,train_eval_loader, trainset, testset
+    return train_loader, test_loader, train_eval_loader, trainset, testset
 
 
-
-def run(args,workers=2):
-    
+def run(args, workers=2):
     # #! theirs ###############################################
 
     # ckpt_fd = "{}".format(args.output_directory) + "/{epoch:02d}_{train_mAP:.3f}_{val_mAP:.3f}"
@@ -254,19 +253,16 @@ def run(args,workers=2):
     #                      resume_from_checkpoint=args.resume_from,
     #                      logger=TensorBoardLogger(args.log_directory))
     # trainer.fit(net)
-    
+
     # #! theirs ###############################################
 
-
-
-    device = torch.device('cuda:'+str(args['gpu_id']) if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda:' + str(args['gpu_id']) if torch.cuda.is_available() else 'cpu')
     print(f'Using {device} for training')
     torch.cuda.set_device(args['gpu_id'])
 
-   
-    # load data 
-    train_loader,test_loader,train_eval_loader, trainset, testset = load_data(args)
-    
+    # load data
+    train_loader, test_loader, train_eval_loader, trainset, testset = load_data(args)
+
     args['num_class'] = len(trainset.classes)
 
     noisy_targets = trainset.targets
@@ -281,7 +277,8 @@ def run(args,workers=2):
         param.detach_()
 
     # Optimizers
-    optimizer = optim.SGD(model.parameters(), lr=args['lr'], momentum=args['momentum'], weight_decay=args['weight_decay'])
+    optimizer = optim.SGD(model.parameters(), lr=args['lr'], momentum=args['momentum'],
+                          weight_decay=args['weight_decay'])
     ema_optimizer = WeightEMA(model, ema_model)
 
     log = {
@@ -295,31 +292,33 @@ def run(args,workers=2):
 
     # Training loop
     total_t0 = time.time()
-    for epoch in range(1, args['epochs']+1):
+    for epoch in range(1, args['epochs'] + 1):
         t0 = time.time()
 
         # Label Correction on 250th epoch, without tuning
         if epoch > args['correction']:
-            args['sigma'] = 0 # Stop SLN
+            args['sigma'] = 0  # Stop SLN
 
             output, losses = get_output(ema_model, device, train_eval_loader)
-            output = np.eye(args['num_class'])[output.argmax(axis=1)] # Predictions
+            output = np.eye(args['num_class'])[output.argmax(axis=1)]  # Predictions
 
-            losses = (losses - min(losses)) / (max(losses) - min(losses)) # Normalize to range [0, 1]
+            losses = (losses - min(losses)) / (max(losses) - min(losses))  # Normalize to range [0, 1]
             losses = losses.reshape([len(losses), 1])
 
-            targets = losses * noisy_targets + (1 - losses) * output # Label correction
+            targets = losses * noisy_targets + (1 - losses) * output  # Label correction
             trainset.targets = targets
-            train_loader = torch.utils.data.DataLoader(trainset, batch_size=args['batch_size'], shuffle=True, num_workers=1)
+            train_loader = torch.utils.data.DataLoader(trainset, batch_size=args['batch_size'], shuffle=True,
+                                                       num_workers=1)
 
         train_loss, train_acc = train(args, model, device, train_loader, optimizer, epoch, ema_optimizer)
         test_loss, test_acc = test(args, ema_model, device, test_loader)
         test_loss_NoEMA, test_acc_NoEMA = test(args, model, device, test_loader)
         log = save_log(log, train_loss, train_acc, test_loss, test_acc, test_loss_NoEMA, test_acc_NoEMA)
-        print('\nEpoch: {} Time: {:.1f}s.'.format(epoch, time.time()-t0))
-        print('Train loss:\t{:.3f}\tTest loss:\t{:.3f}\tTest loss NoEMA:\t{:.3f}\t'.format(train_loss, test_loss, test_loss_NoEMA))
+        print('\nEpoch: {} Time: {:.1f}s.'.format(epoch, time.time() - t0))
+        print('Train loss:\t{:.3f}\tTest loss:\t{:.3f}\tTest loss NoEMA:\t{:.3f}\t'.format(train_loss, test_loss,
+                                                                                           test_loss_NoEMA))
 
-    print('\nTotal training time: {:.1f}s.\n'.format(time.time()-total_t0))
+    print('\nTotal training time: {:.1f}s.\n'.format(time.time() - total_t0))
 
     try:
         torch.save(model.state_dict(), 'model_state')
@@ -358,9 +357,8 @@ if __name__ == '__main__':
     data_cfg = get_data_info(cfg['data'])
     cfg['data'] = data_cfg
     args.cfg = cfg
-    
 
-    #es_cb = pl.callbacks.EarlyStopping("val_mAP", mode="max", verbose=True, patience=10)
+    # es_cb = pl.callbacks.EarlyStopping("val_mAP", mode="max", verbose=True, patience=10)
 
     mixer = mixers.BackgroundAddMixer()
 
@@ -372,8 +370,6 @@ if __name__ == '__main__':
     args.tr_tfs = tr_tfs
     args.val_tfs = val_tfs
 
-
-    
     workers = 2
     if platform == 'win32':
         torch.multiprocessing.freeze_support()
