@@ -7,7 +7,7 @@ import pandas as pd
 
 
 def get_cifar(dataset: str = 'cifar10',
-              path: str = './data',
+              path: str = './data-cifar',
               labels_path: str = './labels',
               noise_mode: str = 'sym',
               noise_rate: float = 0.4):
