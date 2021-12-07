@@ -4,6 +4,9 @@ import soundfile as sf
 
 
 def _collate_fn(batch):
+    """
+    Collate function to be used when wrapping a *dataloader* with
+    """
     def func(p):
         return p[0].size(1)
 
@@ -27,6 +30,12 @@ def _collate_fn(batch):
 
 
 def _collate_fn_multiclass(batch):
+    """
+    Collate function to be used when wrapping a *dataloader* with
+
+    Args:
+        batch ([type]): [description]
+    """
     def func(p):
         return p[0].size(1)
 
