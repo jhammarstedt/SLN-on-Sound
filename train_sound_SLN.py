@@ -250,29 +250,29 @@ def run(args, workers=2):
 
     # #! theirs ###############################################
 
-    device = torch.device('cuda:' + str(args['gpu_id']) if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda:' + str(args.gpu_id) if torch.cuda.is_available() else 'cpu')
     print(f'Using {device} for training')
     torch.cuda.set_device(args['gpu_id'])
 
     # load data
     train_loader, test_loader, train_eval_loader, trainset, testset = load_data(args)
 
-    args['num_class'] = len(trainset.classes)
+    args.num_class = len(trainset.classes)
 
     noisy_targets = trainset.targets
-    noisy_targets = np.eye(args['num_class'])[noisy_targets]
+    noisy_targets = np.eye(args.num_class)[noisy_targets]
 
     # Wide ResNet28-2 model
-    model = Wide_ResNet(num_classes=args['num_class']).cuda()
+    model = Wide_ResNet(num_classes=args.num_class).cuda()
 
     # MO model
-    ema_model = Wide_ResNet(num_classes=args['num_class']).cuda()
+    ema_model = Wide_ResNet(num_classes=args.num_class).cuda()
     for param in ema_model.parameters():
         param.detach_()
 
     # Optimizers
-    optimizer = optim.SGD(model.parameters(), lr=args['lr'], momentum=args['momentum'],
-                          weight_decay=args['weight_decay'])
+    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum,
+                          weight_decay=args.weight_decay)
     ema_optimizer = WeightEMA(model, ema_model)
 
     log = {
@@ -286,22 +286,22 @@ def run(args, workers=2):
 
     # Training loop
     total_t0 = time.time()
-    for epoch in range(1, args['epochs'] + 1):
+    for epoch in range(1, args.epochs + 1):
         t0 = time.time()
 
         # Label Correction on 250th epoch, without tuning
-        if epoch > args['correction']:
-            args['sigma'] = 0  # Stop SLN
+        if epoch > args.correction:
+            args.sigma = 0  # Stop SLN
 
             output, losses = get_output(ema_model, device, train_eval_loader)
-            output = np.eye(args['num_class'])[output.argmax(axis=1)]  # Predictions
+            output = np.eye(args.num_class)[output.argmax(axis=1)]  # Predictions
 
             losses = (losses - min(losses)) / (max(losses) - min(losses))  # Normalize to range [0, 1]
             losses = losses.reshape([len(losses), 1])
 
             targets = losses * noisy_targets + (1 - losses) * output  # Label correction
             trainset.targets = targets
-            train_loader = torch.utils.data.DataLoader(trainset, batch_size=args['batch_size'], shuffle=True,
+            train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True,
                                                        num_workers=1)
 
         train_loss, train_acc = train(args, model, device, train_loader, optimizer, epoch, ema_optimizer)
