@@ -211,8 +211,12 @@ def load_data(args):
     """
     if args.cfg['model']['type'] == "multiclass":
         collate_fn = _collate_fn_multiclass
+        mode = "multiclass"
     elif args.cfg['model']['type'] == "multilabel":
         collate_fn = _collate_fn
+        mode = "multilabel"
+    else:
+        raise ValueError("Model type not supported")
 
     trainset = SpectrogramDataset(args.cfg['data']['train'],
                                                 args.cfg['data']['labels'],
@@ -235,24 +239,23 @@ def load_data(args):
 
 def run(args,workers=2):
     
-    #! theirs ###############################################
-    net = newnet(args)
+    # #! theirs ###############################################
 
-    ckpt_fd = "{}".format(args.output_directory) + "/{epoch:02d}_{train_mAP:.3f}_{val_mAP:.3f}"
-    ckpt_callback = pl.callbacks.model_checkpoint.ModelCheckpoint(
-        filepath=ckpt_fd,
-        verbose=True, save_top_k=-1
-    )
-    precision = 16 if args.fp16 else 32
-    trainer = pl.Trainer(gpus=args.gpus, max_epochs=args.epochs,
-                         precision=precision, accelerator="dp",
-                         num_sanity_val_steps=4170,
-                         callbacks=[ckpt_callback, es_cb],
-                         resume_from_checkpoint=args.resume_from,
-                         logger=TensorBoardLogger(args.log_directory))
-    trainer.fit(net)
+    # ckpt_fd = "{}".format(args.output_directory) + "/{epoch:02d}_{train_mAP:.3f}_{val_mAP:.3f}"
+    # ckpt_callback = pl.callbacks.model_checkpoint.ModelCheckpoint(
+    #     filepath=ckpt_fd,
+    #     verbose=True, save_top_k=-1
+    # )
+    # precision = 16 if args.fp16 else 32
+    # trainer = pl.Trainer(gpus=args.gpus, max_epochs=args.epochs,
+    #                      precision=precision, accelerator="dp",
+    #                      num_sanity_val_steps=4170,
+    #                      callbacks=[ckpt_callback, es_cb],
+    #                      resume_from_checkpoint=args.resume_from,
+    #                      logger=TensorBoardLogger(args.log_directory))
+    # trainer.fit(net)
     
-    #! theirs ###############################################
+    # #! theirs ###############################################
 
 
 
@@ -337,8 +340,6 @@ def run(args,workers=2):
     except:
         print('Failed to save training log')
 
-class newnet():
-    pass
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -359,7 +360,7 @@ if __name__ == '__main__':
     args.cfg = cfg
     
 
-    es_cb = pl.callbacks.EarlyStopping("val_mAP", mode="max", verbose=True, patience=10)
+    #es_cb = pl.callbacks.EarlyStopping("val_mAP", mode="max", verbose=True, patience=10)
 
     mixer = mixers.BackgroundAddMixer()
 
