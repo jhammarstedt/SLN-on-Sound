@@ -20,6 +20,7 @@ from preproc.fsd50k_pytorch_master.src.data.dataset import SpectrogramDataset
 from preproc.fsd50k_pytorch_master.src.data.fsd_eval_dataset import FSD50kEvalDataset,_collate_fn_eval
 from resnet import Wide_ResNet
 
+
 parser = argparse.ArgumentParser()
 parser.description = "Training script for FSD50k baselines"
 parser.add_argument("--cfg_file", type=str, help='path to cfg file')
@@ -264,8 +265,18 @@ def run(args, workers=2):
     print(f'Number of classes: {args.num_class}')
 
     noisy_targets = trainset.labels
-    print(noisy_targets)
-    noisy_targets = np.eye(args.num_class)[noisy_targets]
+
+    # one-hot encoding
+    labels2nums = {}
+    labels = []
+    i = 0
+    for label in noisy_targets:
+        if label not in labels2nums:
+            labels2nums[label] = i
+            i += 1
+        labels.append(labels2nums[label])
+    print(i)
+    noisy_targets = np.eye(args.num_class)[labels]
 
     # Wide ResNet28-2 model
     model = Wide_ResNet(num_classes=args.num_class).cuda()
