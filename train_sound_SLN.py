@@ -259,7 +259,7 @@ def run(args, workers=2):
 
     # load data
     train_loader, test_loader, train_eval_loader, trainset, testset = load_data(args)
-
+    print(trainset)
     args.num_class = len(trainset.classes)
 
     noisy_targets = trainset.targets
