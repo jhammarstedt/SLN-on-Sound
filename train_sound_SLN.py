@@ -18,6 +18,11 @@ import preproc.fsd50k_pytorch_master.src.data.mixers as mixers
 from preproc.fsd50k_pytorch_master.src.models.fsd50k_lightning import FSD50k_Lightning
 from preproc.fsd50k_pytorch_master.src.data.transforms import get_transforms_fsd_chunks
 from preproc.fsd50k_pytorch_master.src.utilities.config_parser import parse_config, get_data_info
+from preproc.fsd50k_pytorch_master.src.data.dataset import SpectrogramDataset
+from preproc.fsd50k_pytorch_master.src.data.fsd_eval_dataset import FSD50kEvalDataset,_collate_fn_eval
+from torch.utils.data import DataLoader
+
+from preproc.fsd50k_pytorch_master.src.data.utils import _collate_fn_multiclass,_collate_fn
 
 parser = argparse.ArgumentParser()
 parser.description = "Training script for FSD50k baselines"
@@ -180,6 +185,53 @@ def save_log(log, train_loss, train_acc, test_loss, test_acc, test_loss_NoEMA, t
     log['test_acc_NoEMA'].append(test_acc_NoEMA)
     return log
 
+def train_dataloader(train_set,args,collate_fn,shuffle):
+        return DataLoader(train_set, num_workers=args.num_workers, shuffle=shuffle,
+                          sampler=None, collate_fn=collate_fn,
+                          batch_size=args.cfg['opt']['batch_size'],
+                          pin_memory=False, drop_last=True)
+
+def val_dataloader(val_set,args,collate_fn,shuffle):
+    return DataLoader(val_set, sampler=None, num_workers=args.num_workers,
+                        collate_fn=_collate_fn_eval,
+                        shuffle=shuffle, batch_size=1,
+                        pin_memory=False)
+
+
+
+def load_data(args):
+    """
+    Reads the data from the specified directory in the args and loads the data into the specified dataloader
+
+    Args:
+        args ([type]): [description]
+
+    Returns:
+        train_loader,test_loader,train_eval_loader 
+    """
+    if args.cfg['model']['type'] == "multiclass":
+        collate_fn = _collate_fn_multiclass
+    elif args.cfg['model']['type'] == "multilabel":
+        collate_fn = _collate_fn
+
+    trainset = SpectrogramDataset(args.cfg['data']['train'],
+                                                args.cfg['data']['labels'],
+                                                args.cfg['audio_config'],
+                                                mode=mode, augment=True,
+                                                mixer=args.tr_mixer,
+                                                transform=args.tr_tfs)
+    testset = FSD50kEvalDataset(args.cfg['data']['val'], args.cfg['data']['labels'],
+                                        args.cfg['audio_config'],
+                                        transform=args.val_tfs
+                                        )
+
+    train_loader = train_dataloader(trainset,args=args,collate_fn=collate_fn,shuffle=True)
+    test_loader = val_dataloader(testset,args=args,shuffle=False)
+    train_eval_loader = train_dataloader(trainset,args=args,shuffle=False)
+
+    return train_loader,test_loader,train_eval_loader, trainset, testset
+
+
 
 def run(args,workers=2):
     
@@ -208,14 +260,10 @@ def run(args,workers=2):
     print(f'Using {device} for training')
     torch.cuda.set_device(args['gpu_id'])
 
-    # Import datasets: Cifar-10, Cifar-100
-    #! fix to sound
-    trainset, testset = get_cifar(dataset='cifar10')
+   
+    # load data 
+    train_loader,test_loader,train_eval_loader, trainset, testset = load_data(args)
     
-    
-    train_loader = torch.utils.data.DataLoader(trainset, batch_size=args['batch_size'], shuffle=True, num_workers=workers)
-    test_loader = torch.utils.data.DataLoader(testset, batch_size=args['batch_size'], shuffle=False, num_workers=workers)
-    train_eval_loader = torch.utils.data.DataLoader(trainset, batch_size=args['batch_size'], shuffle=False, num_workers=workers)
     args['num_class'] = len(trainset.classes)
 
     noisy_targets = trainset.targets
