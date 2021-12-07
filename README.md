@@ -9,3 +9,10 @@ sound dataset.
 * Johan Hammarstedt, [Jhammarstedt](https://github.com/jhammarstedt)
 * Matej Sestak, [Sestys](https://github.com/sestys)
 * Adam Wiker , [AdamWiker](https://github.com/AdamWiker)
+
+## Code to use
+https://github.com/sweemeng/fsd50k_extractor?ref=pythonrepo.com
+
+https://github.com/SarthakYadav/fsd50k-pytorch
+
+https://github.com/marc1701/fsd_fed
