@@ -252,7 +252,7 @@ def run(args, workers=2):
 
     device = torch.device('cuda:' + str(args.gpu_id) if torch.cuda.is_available() else 'cpu')
     print(f'Using {device} for training')
-    torch.cuda.set_device(args['gpu_id'])
+    torch.cuda.set_device(args.gpu_id)
 
     # load data
     train_loader, test_loader, train_eval_loader, trainset, testset = load_data(args)
