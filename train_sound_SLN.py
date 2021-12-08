@@ -162,7 +162,7 @@ def test(args, model, device, loader, criterion=F.cross_entropy):
     test_loss = torch.zeros(1, device=device)
     correct = torch.zeros(1, device=device)
     with torch.no_grad():
-        for data, target in loader:
+        for data, _, target in loader:
             data, target = data.to(device), target.to(device)
 
             # Calculate cross-entropy loss
@@ -226,7 +226,8 @@ def load_data(args):
                                   mode=mode, augment=True,
                                   mixer=args.tr_mixer,
                                   transform=args.tr_tfs)
-    testset = FSD50kEvalDataset(args.cfg['data']['val'], args.cfg['data']['labels'],
+    testset = FSD50kEvalDataset(args.cfg['data']['val'],
+                                args.cfg['data']['labels'],
                                 args.cfg['audio_config'],
                                 transform=args.val_tfs
                                 )
