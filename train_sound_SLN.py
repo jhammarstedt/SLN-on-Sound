@@ -114,19 +114,19 @@ def train(args, model, device, loader, optimizer, epoch, ema_optimizer):
     train_loss = torch.zeros(1, device=device)
     correct = torch.zeros(1, device=device)
 
-    # for data, target in loader:
-    for x in loader:
+    # data, complex_targets, target
+    for data, _, target in loader:
         # One-hot encode single-digit labels
         # if len(target.size()) == 1:
         #     target = torch.zeros(target.size(0), args.num_class.scatter_(1, target.view(-1, 1), 1))
 
-        print(len(x))
-        data, _, target = x
         data, target = data.to(device), target.to(device)
+        print(data[0])
+        print(target[0])
 
         # SLN
-        if args['sigma'] > 0:
-            target += args['sigma'] * torch.randn(target.size(), device=device)
+        # if args.sigma > 0:
+        #     target += args.sigma * torch.randn(target.size(), device=device)
 
         # Calculate loss
         output = model(data)
