@@ -370,9 +370,10 @@ if __name__ == '__main__':
 
     # es_cb = pl.callbacks.EarlyStopping("val_mAP", mode="max", verbose=True, patience=10)
 
-    mixer = mixers.BackgroundAddMixer()
-
-    args.tr_mixer = mixers.UseMixerWithProb(mixer, args.mixer_prob)
+    # mixer = mixers.BackgroundAddMixer()
+    #
+    # args.tr_mixer = mixers.UseMixerWithProb(mixer, args.mixer_prob)
+    args.tr_mixer = None
 
     tr_tfs = get_transforms_fsd_chunks(True, 101)
     val_tfs = get_transforms_fsd_chunks(False, 101)
