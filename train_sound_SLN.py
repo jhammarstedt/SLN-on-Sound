@@ -267,16 +267,16 @@ def run(args, workers=2):
     noisy_targets = trainset.labels
 
     # one-hot encoding
-    labels2nums = {}
-    labels = []
-    i = 0
-    for label in noisy_targets:
-        if label not in labels2nums:
-            labels2nums[label] = i
-            i += 1
-        labels.append(labels2nums[label])
-    print(i)
-    noisy_targets = np.eye(args.num_class)[labels]
+    # labels2nums = {}
+    # labels = []
+    # i = 0
+    # for label in noisy_targets:
+    #     if label not in labels2nums:
+    #         labels2nums[label] = i
+    #         i += 1
+    #     labels.append(labels2nums[label])
+    # print(i)
+    # noisy_targets = np.eye(args.num_class)[labels]
 
     # Wide ResNet28-2 model
     model = Wide_ResNet(num_classes=args.num_class).cuda()
