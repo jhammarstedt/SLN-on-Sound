@@ -120,8 +120,8 @@ def train(args, model, device, loader, optimizer, epoch, ema_optimizer):
         # if len(target.size()) == 1:
         #     target = torch.zeros(target.size(0), args.num_class.scatter_(1, target.view(-1, 1), 1))
 
-        print(x)
-        data, target = x
+        print(len(x))
+        data, _, target = x
         data, target = data.to(device), target.to(device)
 
         # SLN
