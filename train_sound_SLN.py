@@ -114,11 +114,14 @@ def train(args, model, device, loader, optimizer, epoch, ema_optimizer):
     train_loss = torch.zeros(1, device=device)
     correct = torch.zeros(1, device=device)
 
-    for data, target in loader:
+    # for data, target in loader:
+    for x in loader:
         # One-hot encode single-digit labels
-        if len(target.size()) == 1:
-            target = torch.zeros(target.size(0), args['num_class']).scatter_(1, target.view(-1, 1), 1)
+        # if len(target.size()) == 1:
+        #     target = torch.zeros(target.size(0), args.num_class.scatter_(1, target.view(-1, 1), 1))
 
+        print(x)
+        data, target = x
         data, target = data.to(device), target.to(device)
 
         # SLN
@@ -302,6 +305,7 @@ def run(args, workers=2):
 
     # Training loop
     total_t0 = time.time()
+    print('Starting training loop ...')
     for epoch in range(1, args.epochs + 1):
         t0 = time.time()
 
