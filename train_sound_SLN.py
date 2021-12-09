@@ -215,10 +215,11 @@ def val_dataloader(val_set, args, shuffle):
                       pin_memory=False)
 
 def labels_to_sparse(dataset):
+    labels = torch.tensor(len(dataset[1]))
     for i in range(len(dataset[0])):
-        dataset[1][i] = torch.argmax(dataset[1][i])
+        labels[i] = torch.argmax(dataset[1][i])
 
-    return dataset
+    return labels
 
 def load_data(args):
     """
