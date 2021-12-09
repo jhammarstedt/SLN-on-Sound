@@ -33,6 +33,7 @@ class SpectrogramDataset(Dataset):
         df = pd.read_csv(manifest_path)
         self.files = df['files'].values
         self.labels = df['labels'].values
+        print(self.labels[0])
         assert len(self.files) == len(self.labels)
         self.len = len(self.files)
         self.sr = audio_config.get("sample_rate", "22050")
@@ -131,9 +132,9 @@ class SpectrogramDataset(Dataset):
             return label_tensor
         elif self.mode == "multiclass":
             # take the first label, HOTFIX
-            label_tensor = torch.zeros(len(self.labels_map)).float()
-            label_tensor[self.labels_map[lbls.split(self.labels_delim)[0]]] = 1
-            return label_tensor
+            # label_tensor = torch.zeros(len(self.labels_map)).float()
+            # label_tensor[self.labels_map[lbls.split(self.labels_delim)[0]]] = 1
+            return self.labels_map[lbls.split(self.labels_delim)[0]]
 
     def __len__(self):
         return self.len

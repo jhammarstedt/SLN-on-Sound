@@ -122,15 +122,17 @@ def train(args, model, device, loader, optimizer, epoch, ema_optimizer, criterio
     # data, complex_targets, target
     i = 0
     for data, _, target in tqdm(loader):
-        # if i == 10:
-        #     break
-        # else:
-        #     i+=1
+        if i == 10:
+            break
+        else:
+            i+=1
         # One-hot encode single-digit labels
         # if len(target.size()) == 1:
         #     target = torch.zeros(target.size(0), args.num_class.scatter_(1, target.view(-1, 1), 1))
         # print(target.shape)
-        data, target = data.to(device), target.to(device)
+        one_hot_target = torch.tensor(np.eye(args.num_class)[target])
+        
+        data, target = data.to(device), one_hot_target.to(device)
 
         # SLN
         # if args.sigma > 0:
@@ -176,6 +178,7 @@ def test(args, model, device, loader, criterion=F.cross_entropy):
                 break
             else:
                 i += 1
+
             data, target = data.to(device), target.to(device)
 
             # Calculate cross-entropy loss
@@ -214,13 +217,6 @@ def val_dataloader(val_set, args, shuffle):
                       shuffle=shuffle, batch_size=1,
                       pin_memory=False)
 
-def labels_to_sparse(dataset):
-    labels = torch.tensor(len(dataset[1]))
-    for i in range(len(dataset[0])):
-        labels[i] = torch.argmax(dataset[1][i])
-
-    return labels
-
 def load_data(args):
     """
     Reads the data from the specified directory in the args and loads the data into the specified dataloader
@@ -251,9 +247,6 @@ def load_data(args):
                                 args.cfg['audio_config'],
                                 transform=args.val_tfs
                                 )
-
-    trainset = labels_to_sparse(trainset)
-    print(trainset[1][0])
 
     train_loader = train_dataloader(trainset, args=args, collate_fn=collate_fn, shuffle=True)
     test_loader = val_dataloader(testset, args=args, shuffle=False)
@@ -323,7 +316,9 @@ def run(args, workers=2):
                           weight_decay=args.weight_decay)
     ema_optimizer = WeightEMA(model, ema_model)
 
-    criterion = BCEWithLogitsLoss(args.cw)
+    # criterion = BCEWithLogitsLoss(args.cw)
+
+    criterion = F.cross_entropy
 
     log = {
         'train_loss': [],

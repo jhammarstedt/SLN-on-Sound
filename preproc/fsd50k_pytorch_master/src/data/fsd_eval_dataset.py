@@ -91,6 +91,7 @@ class FSD50kEvalDataset(Dataset):
         label_tensor = torch.zeros(len(self.labels_map)).float()
         for lbl in lbls.split(self.labels_delim):
             label_tensor[self.labels_map[lbl]] = 1
+            break
 
         return label_tensor
 
