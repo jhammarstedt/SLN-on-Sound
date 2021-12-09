@@ -214,6 +214,11 @@ def val_dataloader(val_set, args, shuffle):
                       shuffle=shuffle, batch_size=1,
                       pin_memory=False)
 
+def labels_to_sparse(dataset):
+    for i in range(len(dataset[0])):
+        dataset[1][i] = torch.argmax(dataset[1][i])
+
+    return dataset
 
 def load_data(args):
     """
@@ -246,7 +251,8 @@ def load_data(args):
                                 transform=args.val_tfs
                                 )
 
-    print(trainset[1][1])
+    trainset = labels_to_sparse(trainset)
+    print(trainset[1][0])
 
     train_loader = train_dataloader(trainset, args=args, collate_fn=collate_fn, shuffle=True)
     test_loader = val_dataloader(testset, args=args, shuffle=False)
