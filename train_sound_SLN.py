@@ -5,6 +5,7 @@ import os
 import time
 from sys import platform
 
+from tqdm import tqdm
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -116,14 +117,12 @@ def train(args, model, device, loader, optimizer, epoch, ema_optimizer):
     correct = torch.zeros(1, device=device)
 
     # data, complex_targets, target
-    for data, _, target in loader:
+    for data, _, target in tqdm(loader):
         # One-hot encode single-digit labels
         # if len(target.size()) == 1:
         #     target = torch.zeros(target.size(0), args.num_class.scatter_(1, target.view(-1, 1), 1))
 
         data, target = data.to(device), target.to(device)
-        print(data[0].shape)
-        print(target[0].shape)
 
         # SLN
         # if args.sigma > 0:
