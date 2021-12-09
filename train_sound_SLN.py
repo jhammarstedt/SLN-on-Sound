@@ -137,7 +137,7 @@ def train(args, model, device, loader, optimizer, epoch, ema_optimizer, criterio
         # if args.sigma > 0:
         #     target += args.sigma * torch.randn(target.size(), device=device)
 
-        print(f'Memory usage for batch {i}: {process.memory_info().rss}')
+        print(f'Memory usage for batch {i}: {process.memory_info().rss * 9.31e-10}')
 
         # Calculate loss
         output = model(data)
@@ -326,7 +326,7 @@ def run(args, workers=2):
     }
 
     process = psutil.Process(os.getpid())
-    print(f'Memory usage before training: {process.memory_info().rss}')
+    print(f'Memory usage before training: {process.memory_info().rss * 9.31e-10}')
 
     # Training loop
     total_t0 = time.time()
