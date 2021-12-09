@@ -16,6 +16,7 @@ from preproc.fsd50k_pytorch_master.src.data.transforms import get_transforms_fsd
 from preproc.fsd50k_pytorch_master.src.data.utils import _collate_fn_multiclass, _collate_fn
 from preproc.fsd50k_pytorch_master.src.utilities.config_parser import parse_config, get_data_info
 from preproc.fsd50k_pytorch_master.src.data.dataset import SpectrogramDataset
+from preproc.fsd50k_pytorch_master.src.models.fsd50k_lightning import model_helper
 #import evaldataset
 from preproc.fsd50k_pytorch_master.src.data.fsd_eval_dataset import FSD50kEvalDataset,_collate_fn_eval
 from resnet import Wide_ResNet
@@ -283,10 +284,12 @@ def run(args, workers=2):
     # noisy_targets = np.eye(args.num_class)[labels]
 
     # Wide ResNet28-2 model
-    model = Wide_ResNet(num_classes=args.num_class).cuda()
+    # model = Wide_ResNet(num_classes=args.num_class).cuda()
 
+    model = model_helper(args.cfg['model'])
     # MO model
-    ema_model = Wide_ResNet(num_classes=args.num_class).cuda()
+    # ema_model = Wide_ResNet(num_classes=args.num_class).cuda()
+    ema_model = model_helper(args.cfg['model'])
     for param in ema_model.parameters():
         param.detach_()
 
