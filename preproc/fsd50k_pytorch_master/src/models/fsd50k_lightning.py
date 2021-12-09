@@ -88,7 +88,7 @@ def model_helper(opt):
 class FSD50k_Lightning(pl.LightningModule):
     def __init__(self, hparams):
         super(FSD50k_Lightning, self).__init__()
-        self._hparams = hgit statusparams
+        self._hparams = hparams
         self.net = model_helper(self._hparams.cfg['model'])
         if self._hparams.cfg['model']['type'] == "multiclass":
             if self._hparams.cw is not None:
