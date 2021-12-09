@@ -33,6 +33,9 @@ class SpectrogramDataset(Dataset):
         df = pd.read_csv(manifest_path)
         self.files = df['files'].values
         self.labels = df['labels'].values
+        if mode == 'multiclass':
+            self.labels = self.multiclass_from_multilabel()
+            self.labels = self.sym_noise_multiclass()
         print(self.labels[0])
         assert len(self.files) == len(self.labels)
         self.len = len(self.files)
@@ -106,7 +109,10 @@ class SpectrogramDataset(Dataset):
     def __get_item_helper__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         f = self.files[index]
         lbls = self.labels[index]
-        label_tensor = self.__parse_labels__(lbls)
+        if self.mode == 'multilabel':
+            label_tensor = self.__parse_labels__(lbls)
+        else:
+            label_tensor = lbls
         preprocessed_audio = self.__get_audio__(f)
         real, comp = self.__get_feature__(preprocessed_audio)
         if self.transform is not None:
@@ -141,3 +147,24 @@ class SpectrogramDataset(Dataset):
 
     def get_bg_len(self):
         return len(self.bg_files)
+
+    def multiclass_from_multilabel(self):
+        print('Getting single label for samples ...')
+        labels = [self.labels_map[lbl.split(self.labels_delim)[0]] for lbl in self.labels]
+        return np.array(labels)
+
+    def sym_noise_multiclass(self, noise_rate=0.4):
+        np.random.seed(42)
+        print(f'Adding symmetric label noise with {noise_rate} rate')
+        min_class = np.min(self.labels)
+        max_class = np.max(self.labels)
+        noisy_labels = []
+        for label in tqdm(self.labels):
+            if np.random.uniform() < noise_rate:
+                new_label = np.random.randint(low=min_class, high=max_class + 1)
+                while new_label == label:
+                    new_label = np.random.randint(low=min_class, high=max_class + 1)
+                noisy_labels.append(new_label)
+            else:
+                noisy_labels.append(label)
+        return np.array(noisy_labels)
