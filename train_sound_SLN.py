@@ -178,7 +178,8 @@ def test(args, model, device, loader, criterion=F.cross_entropy):
 
             # Calculate cross-entropy loss
             output = model(data)
-            test_loss += criterion(output, target, reduction='sum')
+            output = output.mean(0).unsqueeze(0)
+            test_loss += criterion(output, target)
 
             # Check for correct prediction
             pred = output.argmax(dim=1, keepdim=True)
