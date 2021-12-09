@@ -117,7 +117,12 @@ def train(args, model, device, loader, optimizer, epoch, ema_optimizer):
     correct = torch.zeros(1, device=device)
 
     # data, complex_targets, target
+    i = 0
     for data, _, target in tqdm(loader):
+        if i == 10:
+            break
+        else:
+            i+=1
         # One-hot encode single-digit labels
         # if len(target.size()) == 1:
         #     target = torch.zeros(target.size(0), args.num_class.scatter_(1, target.view(-1, 1), 1))
@@ -161,8 +166,13 @@ def test(args, model, device, loader, criterion=F.cross_entropy):
     model.eval()
     test_loss = torch.zeros(1, device=device)
     correct = torch.zeros(1, device=device)
+    i = 0
     with torch.no_grad():
-        for data, _, target in loader:
+        for data, _, target in tqdm(loader):
+            if i == 10:
+                break
+            else:
+                i += 1
             data, target = data.to(device), target.to(device)
 
             # Calculate cross-entropy loss
