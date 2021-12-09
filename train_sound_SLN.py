@@ -29,7 +29,7 @@ parser = argparse.ArgumentParser()
 parser.description = "Training script for FSD50k baselines"
 parser.add_argument("--cfg_file", type=str, help='path to cfg file')
 parser.add_argument("--expdir", "-e", type=str, help="directory for logging and checkpointing")
-parser.add_argument('--epochs', default=300, type=int, metavar='N', help='number of total epochs to run')
+parser.add_argument('--epochs', default=25, type=int, metavar='N', help='number of total epochs to run')
 parser.add_argument("--num_workers", type=int, default=4)
 parser.add_argument("--cw", type=str, required=False,
                     help="path to serialized torch tensor containing class weights")
@@ -53,9 +53,9 @@ parser.add_argument("--momentum", type=float, default=0.9,
                     help="...")
 parser.add_argument("--weight_decay", type=float, default=5e-4,
                     help="...")
-parser.add_argument("--batch_size", type=int, default=128,
+parser.add_argument("--batch_size", type=int, default=256,
                     help="...")
-parser.add_argument("--correction", type=int, default=250,
+parser.add_argument("--correction", type=int, default=20,
                     help="...")
 parser.add_argument("--num_class", type=int, default=1,
                     help="...")
@@ -128,7 +128,7 @@ def train(args, model, device, loader, optimizer, epoch, ema_optimizer, criterio
         # One-hot encode single-digit labels
         # if len(target.size()) == 1:
         #     target = torch.zeros(target.size(0), args.num_class.scatter_(1, target.view(-1, 1), 1))
-        print(target.shape)
+        # print(target.shape)
         data, target = data.to(device), target.to(device)
 
         # SLN
