@@ -168,7 +168,7 @@ def test(args, model, device, loader, criterion=F.cross_entropy):
     correct = torch.zeros(1, device=device)
     i = 0
     with torch.no_grad():
-        for data, _, target in tqdm(loader):
+        for data, target in tqdm(loader):
             if i == 10:
                 break
             else:
