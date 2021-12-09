@@ -302,14 +302,7 @@ def run(args, workers=2):
     # Wide ResNet28-2 model
     # model = Wide_ResNet(num_classes=args.num_class).cuda()
 
-    # model = model_helper(args.cfg['model']).cuda()
-    model = FSD50k_Lightning(args)
-
-    precision = 16 if args.fp16 else 32
-    trainer = pl.Trainer(gpus=1, max_epochs=args.epochs, precision=precision, accelerator="dp", num_sanity_val_steps=4170)
-    trainer.fit(model)
-
-    return
+    model = model_helper(args.cfg['model']).cuda()
     # MO model
     # ema_model = Wide_ResNet(num_classes=args.num_class).cuda()
     ema_model = model_helper(args.cfg['model']).cuda()
@@ -416,8 +409,14 @@ if __name__ == '__main__':
     args.tr_tfs = tr_tfs
     args.val_tfs = val_tfs
 
-    workers = 2
-    if platform == 'win32':
-        torch.multiprocessing.freeze_support()
-        workers = 1
-    run(args)
+    model = FSD50k_Lightning(args)
+
+    precision = 16 if args.fp16 else 32
+    trainer = pl.Trainer(gpus=1, max_epochs=args.epochs, precision=precision, accelerator="dp", num_sanity_val_steps=4170)
+    trainer.fit(model)
+
+    # workers = 2
+    # if platform == 'win32':
+    #     torch.multiprocessing.freeze_support()
+    #     workers = 1
+    # run(args)
