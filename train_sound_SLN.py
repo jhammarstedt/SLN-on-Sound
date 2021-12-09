@@ -122,10 +122,10 @@ def train(args, model, device, loader, optimizer, epoch, ema_optimizer, criterio
     # data, complex_targets, target
     i = 0
     for data, _, target in tqdm(loader):
-        if i == 10:
-            break
-        else:
-            i+=1
+        # if i == 10:
+        #     break
+        # else:
+        #     i+=1
         # One-hot encode single-digit labels
         # if len(target.size()) == 1:
         #     target = torch.zeros(target.size(0), args.num_class.scatter_(1, target.view(-1, 1), 1))
@@ -135,8 +135,8 @@ def train(args, model, device, loader, optimizer, epoch, ema_optimizer, criterio
         data, target = data.to(device), one_hot_target.to(device)
 
         # SLN
-        # if args.sigma > 0:
-        #     target += args.sigma * torch.randn(target.size(), device=device)
+        if args.sigma > 0:
+            target += args.sigma * torch.randn(target.size(), device=device)
 
         # Calculate loss
         output = model(data)
@@ -174,10 +174,10 @@ def test(args, model, device, loader, criterion=F.cross_entropy):
     i = 0
     with torch.no_grad():
         for data, target in tqdm(loader):
-            if i == 10:
-                break
-            else:
-                i += 1
+            # if i == 10:
+            #     break
+            # else:
+            #     i += 1
 
             data, target = data.to(device), target.to(device)
 
