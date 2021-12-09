@@ -2,6 +2,7 @@ import argparse
 import json
 # New code
 import os
+import psutil
 import time
 from sys import platform
 
@@ -117,13 +118,15 @@ def train(args, model, device, loader, optimizer, epoch, ema_optimizer, criterio
     train_loss = torch.zeros(1, device=device)
     correct = torch.zeros(1, device=device)
 
+    process = psutil.Process(os.getpid())
+
     # data, complex_targets, target
     i = 0
     for data, _, target in tqdm(loader):
-        if i == 10:
-            break
-        else:
-            i+=1
+        # if i == 10:
+        #     break
+        # else:
+        i+=1
         # One-hot encode single-digit labels
         # if len(target.size()) == 1:
         #     target = torch.zeros(target.size(0), args.num_class.scatter_(1, target.view(-1, 1), 1))
@@ -133,6 +136,8 @@ def train(args, model, device, loader, optimizer, epoch, ema_optimizer, criterio
         # SLN
         # if args.sigma > 0:
         #     target += args.sigma * torch.randn(target.size(), device=device)
+
+        print(f'Memory usage for batch {i}: {process.memory_info().rss}')
 
         # Calculate loss
         output = model(data)
@@ -221,7 +226,7 @@ def load_data(args):
         args ([type]): [description]
 
     Returns:
-        train_loader,test_loader,train_eval_loader 
+        train_loader,test_loader,train_eval_loader
     """
     if args.cfg['model']['type'] == "multiclass":
         collate_fn = _collate_fn_multiclass
@@ -319,6 +324,9 @@ def run(args, workers=2):
         'test_loss_NoEMA': [],
         'test_acc_NoEMA': []
     }
+
+    process = psutil.Process(os.getpid())
+    print(f'Memory usage before training: {process.memory_info().rss}')
 
     # Training loop
     total_t0 = time.time()
