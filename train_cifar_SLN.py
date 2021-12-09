@@ -192,6 +192,7 @@ def run(workers=2):
 
     # Training loop
     total_t0 = time.time()
+    print("####### Starting training at {} #######".format(total_t0))
     for epoch in range(1, args['epochs']+1):
         t0 = time.time()
 
