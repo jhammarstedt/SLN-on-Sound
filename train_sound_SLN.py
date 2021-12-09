@@ -13,13 +13,14 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torch.nn import BCEWithLogitsLoss
+import pytorch_lightning as pl
 
 import preproc.fsd50k_pytorch_master.src.data.mixers as mixers
 from preproc.fsd50k_pytorch_master.src.data.transforms import get_transforms_fsd_chunks
 from preproc.fsd50k_pytorch_master.src.data.utils import _collate_fn_multiclass, _collate_fn
 from preproc.fsd50k_pytorch_master.src.utilities.config_parser import parse_config, get_data_info
 from preproc.fsd50k_pytorch_master.src.data.dataset import SpectrogramDataset
-from preproc.fsd50k_pytorch_master.src.models.fsd50k_lightning import model_helper
+from preproc.fsd50k_pytorch_master.src.models.fsd50k_lightning import model_helper, FSD50k_Lightning
 #import evaldataset
 from preproc.fsd50k_pytorch_master.src.data.fsd_eval_dataset import FSD50kEvalDataset,_collate_fn_eval
 from resnet import Wide_ResNet
@@ -301,7 +302,14 @@ def run(args, workers=2):
     # Wide ResNet28-2 model
     # model = Wide_ResNet(num_classes=args.num_class).cuda()
 
-    model = model_helper(args.cfg['model']).cuda()
+    # model = model_helper(args.cfg['model']).cuda()
+    model = FSD50k_Lightning(args)
+
+    precision = 16 if args.fp16 else 32
+    trainer = pl.Trainer(gpus=1, max_epochs=args.epochs, precision=precision, accelerator="dp", num_sanity_val_steps=4170)
+    trainer.fit(model)
+
+    return
     # MO model
     # ema_model = Wide_ResNet(num_classes=args.num_class).cuda()
     ema_model = model_helper(args.cfg['model']).cuda()
