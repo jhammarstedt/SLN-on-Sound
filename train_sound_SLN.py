@@ -11,6 +11,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from torch.nn import BCEWithLogitsLoss
 
 import preproc.fsd50k_pytorch_master.src.data.mixers as mixers
 from preproc.fsd50k_pytorch_master.src.data.transforms import get_transforms_fsd_chunks
@@ -111,7 +112,7 @@ def get_output(model, device, loader):
 
 
 # Train on Wide ResNet-28-2
-def train(args, model, device, loader, optimizer, epoch, ema_optimizer):
+def train(args, model, device, loader, optimizer, epoch, ema_optimizer, criterion):
     model.train()
     train_loss = torch.zeros(1, device=device)
     correct = torch.zeros(1, device=device)
@@ -135,7 +136,7 @@ def train(args, model, device, loader, optimizer, epoch, ema_optimizer):
 
         # Calculate loss
         output = model(data)
-        loss = -torch.mean(torch.sum(F.log_softmax(output, dim=1) * target, dim=1))
+        loss = criterion(output, target)
 
         # Update weights
         optimizer.zero_grad()
@@ -307,6 +308,8 @@ def run(args, workers=2):
                           weight_decay=args.weight_decay)
     ema_optimizer = WeightEMA(model, ema_model)
 
+    criterion = BCEWithLogitsLoss(args.cw)
+
     log = {
         'train_loss': [],
         'train_acc': [],
@@ -337,9 +340,9 @@ def run(args, workers=2):
             train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True,
                                                        num_workers=1)
 
-        train_loss, train_acc = train(args, model, device, train_loader, optimizer, epoch, ema_optimizer)
-        test_loss, test_acc = test(args, ema_model, device, test_loader)
-        test_loss_NoEMA, test_acc_NoEMA = test(args, model, device, test_loader)
+        train_loss, train_acc = train(args, model, device, train_loader, optimizer, epoch, ema_optimizer, criterion)
+        test_loss, test_acc = test(args, ema_model, device, test_loader, criterion)
+        test_loss_NoEMA, test_acc_NoEMA = test(args, model, device, test_loader, criterion)
         log = save_log(log, train_loss, train_acc, test_loss, test_acc, test_loss_NoEMA, test_acc_NoEMA)
         print('\nEpoch: {} Time: {:.1f}s.'.format(epoch, time.time() - t0))
         print('Train loss:\t{:.3f}\tTest loss:\t{:.3f}\tTest loss NoEMA:\t{:.3f}\t'.format(train_loss, test_loss,
