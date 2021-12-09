@@ -130,7 +130,10 @@ class SpectrogramDataset(Dataset):
 
             return label_tensor
         elif self.mode == "multiclass":
-            return self.labels_map[lbls]
+            # take the first label, HOTFIX
+            label_tensor = torch.zeros(len(self.labels_map)).float()
+            label_tensor[self.labels_map[lbls.split(self.labels_delim)[0]]] = 1
+            return label_tensor
 
     def __len__(self):
         return self.len

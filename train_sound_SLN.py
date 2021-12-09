@@ -127,7 +127,7 @@ def train(args, model, device, loader, optimizer, epoch, ema_optimizer, criterio
         # One-hot encode single-digit labels
         # if len(target.size()) == 1:
         #     target = torch.zeros(target.size(0), args.num_class.scatter_(1, target.view(-1, 1), 1))
-
+        print(target.shape)
         data, target = data.to(device), target.to(device)
 
         # SLN
@@ -182,8 +182,8 @@ def test(args, model, device, loader, criterion=F.cross_entropy):
             test_loss += criterion(output, target)
 
             # Check for correct prediction
-            pred = output.argmax(dim=1, keepdim=True)
-            correct += pred.eq(target.view_as(pred)).sum()
+            # pred = output.argmax(dim=1, keepdim=True)
+            # correct += pred.eq(target.view_as(pred)).sum()
 
     # Return average test loss and test accuracy
     return test_loss.item() / len(loader.dataset), correct.item() / len(loader.dataset)
