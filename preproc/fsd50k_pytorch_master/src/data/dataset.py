@@ -159,7 +159,7 @@ class SpectrogramDataset(Dataset):
         min_class = np.min(self.labels)
         max_class = np.max(self.labels)
         noisy_labels = []
-        for label in tqdm(self.labels):
+        for label in tqdm.tqdm(self.labels):
             if np.random.uniform() < noise_rate:
                 new_label = np.random.randint(low=min_class, high=max_class + 1)
                 while new_label == label:
