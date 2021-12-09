@@ -246,6 +246,8 @@ def load_data(args):
                                 transform=args.val_tfs
                                 )
 
+    print(trainset[1][1])
+
     train_loader = train_dataloader(trainset, args=args, collate_fn=collate_fn, shuffle=True)
     test_loader = val_dataloader(testset, args=args, shuffle=False)
     train_eval_loader = train_dataloader(trainset, collate_fn=collate_fn,args=args, shuffle=False)
