@@ -88,25 +88,25 @@ def model_helper(opt):
 class FSD50k_Lightning(pl.LightningModule):
     def __init__(self, hparams):
         super(FSD50k_Lightning, self).__init__()
-        self._hparams = hparams
-        self.net = model_helper(self._hparams.cfg['model'])
-        if self._hparams.cfg['model']['type'] == "multiclass":
-            if self._hparams.cw is not None:
+        self.hparams = hparams
+        self.net = model_helper(self.hparams.cfg['model'])
+        if self.hparams.cfg['model']['type'] == "multiclass":
+            if self.hparams.cw is not None:
                 print("Class weights found. Training weighted cross-entropy model")
-                cw = torch.load(self._hparams.cw)
+                cw = torch.load(self.hparams.cw)
             else:
                 print("Training weighted cross-entropy model")
                 cw = None
             self.criterion = nn.CrossEntropyLoss(weight=cw)
             self.mode = "multiclass"
             self.collate_fn = _collate_fn_multiclass
-        elif self._hparams.cfg['model']['type'] == "multilabel":
-            use_focal = self._hparams.cfg['opt'].get("focal_loss", False)
+        elif self.hparams.cfg['model']['type'] == "multilabel":
+            use_focal = self.hparams.cfg['opt'].get("focal_loss", False)
             print("Training multilabel model")
             self.mode = "multilabel"
             if not use_focal:
-                if self._hparams.cw is not None:
-                    cw = torch.load(self._hparams.cw)
+                if self.hparams.cw is not None:
+                    cw = torch.load(self.hparams.cw)
                     self.criterion = nn.BCEWithLogitsLoss(pos_weight=cw)
                 else:
                     self.criterion = nn.BCEWithLogitsLoss(self.hparams.cw)
@@ -121,15 +121,15 @@ class FSD50k_Lightning(pl.LightningModule):
         self.val_gts = []
 
     def prepare_data(self) -> None:
-        self.train_set = SpectrogramDataset(self._hparams.cfg['data']['train'],
-                                            self._hparams.cfg['data']['labels'],
-                                            self._hparams.cfg['audio_config'],
+        self.train_set = SpectrogramDataset(self.hparams.cfg['data']['train'],
+                                            self.hparams.cfg['data']['labels'],
+                                            self.hparams.cfg['audio_config'],
                                             mode=self.mode, augment=True,
-                                            mixer=self._hparams.tr_mixer,
-                                            transform=self._hparams.tr_tfs)
-        self.val_set = FSD50kEvalDataset(self._hparams.cfg['data']['val'], self._hparams.cfg['data']['labels'],
-                                         self._hparams.cfg['audio_config'],
-                                         transform=self._hparams.val_tfs
+                                            mixer=self.hparams.tr_mixer,
+                                            transform=self.hparams.tr_tfs)
+        self.val_set = FSD50kEvalDataset(self.hparams.cfg['data']['val'], self._hparams.cfg['data']['labels'],
+                                         self.hparams.cfg['audio_config'],
+                                         transform=self.hparams.val_tfs
                                          )
 
     def forward(self, x):
@@ -167,8 +167,8 @@ class FSD50k_Lightning(pl.LightningModule):
         self.val_gts = []
 
     def configure_optimizers(self):
-        wd = float(self._hparams.cfg['opt'].get("weight_decay", 0))
-        lr = float(self._hparams.cfg['opt'].get("lr", 1e-3))
+        wd = float(self.hparams.cfg['opt'].get("weight_decay", 0))
+        lr = float(self.hparams.cfg['opt'].get("lr", 1e-3))
         optimizer = torch.optim.Adam(self.parameters(), lr=lr, weight_decay=wd)
         lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, "max", factor=0.1,
                                                                   patience=5, verbose=True)
@@ -180,13 +180,13 @@ class FSD50k_Lightning(pl.LightningModule):
         }
 
     def train_dataloader(self):
-        return DataLoader(self.train_set, num_workers=self._hparams.num_workers, shuffle=True,
+        return DataLoader(self.train_set, num_workers=self.hparams.num_workers, shuffle=True,
                           sampler=None, collate_fn=self.collate_fn,
-                          batch_size=self._hparams.cfg['opt']['batch_size'],
+                          batch_size=self.hparams.cfg['opt']['batch_size'],
                           pin_memory=False, drop_last=True)
 
     def val_dataloader(self):
-        return DataLoader(self.val_set, sampler=None, num_workers=self._hparams.num_workers,
+        return DataLoader(self.val_set, sampler=None, num_workers=self.hparams.num_workers,
                           collate_fn=_collate_fn_eval,
                           shuffle=False, batch_size=1,
                           pin_memory=False)

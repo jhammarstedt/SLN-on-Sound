@@ -409,14 +409,8 @@ if __name__ == '__main__':
     args.tr_tfs = tr_tfs
     args.val_tfs = val_tfs
 
-    model = FSD50k_Lightning(args)
-
-    precision = 16 if args.fp16 else 32
-    trainer = pl.Trainer(gpus=1, max_epochs=args.epochs, precision=precision, accelerator="dp", num_sanity_val_steps=4170)
-    trainer.fit(model)
-
-    # workers = 2
-    # if platform == 'win32':
-    #     torch.multiprocessing.freeze_support()
-    #     workers = 1
-    # run(args)
+    workers = 2
+    if platform == 'win32':
+        torch.multiprocessing.freeze_support()
+        workers = 1
+    run(args)
