@@ -122,8 +122,8 @@ def train(args, model, device, loader, optimizer, epoch, ema_optimizer):
         #     target = torch.zeros(target.size(0), args.num_class.scatter_(1, target.view(-1, 1), 1))
 
         data, target = data.to(device), target.to(device)
-        print(data[0])
-        print(target[0])
+        print(data[0].shape)
+        print(target[0].shape)
 
         # SLN
         # if args.sigma > 0:
@@ -286,10 +286,10 @@ def run(args, workers=2):
     # Wide ResNet28-2 model
     # model = Wide_ResNet(num_classes=args.num_class).cuda()
 
-    model = model_helper(args.cfg['model'])
+    model = model_helper(args.cfg['model']).cuda()
     # MO model
     # ema_model = Wide_ResNet(num_classes=args.num_class).cuda()
-    ema_model = model_helper(args.cfg['model'])
+    ema_model = model_helper(args.cfg['model']).cuda()
     for param in ema_model.parameters():
         param.detach_()
 
