@@ -24,7 +24,12 @@ def model_helper(opt):
         ckpt = torch.load(pretrained)
         print("pretrained model {} with {} classes found.".format(pretrained, pretrained_fc))
     else:
-        pretrained_flag = False
+        if opt.pretrained:
+            pretrained_flag = True
+            ckpt = torch.load(opt.pretrained_path)
+            
+        else:
+            pretrained_flag = False
         num_classes = opt['num_classes']
 
     if opt['arch'] == "vgglike":
