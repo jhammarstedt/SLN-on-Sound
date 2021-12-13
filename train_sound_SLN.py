@@ -64,7 +64,8 @@ parser.add_argument("--gpu_id", type=int, default=0,
                     help="...")
 parser.add_argument("--sigma", type=int, default=1,
                     help=" for cifar 10: 1 == symmetric, 0.5 == asymetric")
-
+parser.add_argument("--pretrained", type=bool, default=False,
+                    help=" Set to true to use pretrained model")
 
 # Weight Exponential Moving Average
 class WeightEMA(object):
