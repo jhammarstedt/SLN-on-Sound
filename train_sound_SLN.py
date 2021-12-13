@@ -90,26 +90,29 @@ class WeightEMA(object):
 
 
 # Get output
-def get_output(model, device, loader):
+def get_output(model, device, loader, args):
     softmax = []
     losses = []
     model.eval()
-
+    i = 0
     with torch.no_grad():
-        for data, target in loader:
+        for data, _, target in loader:
+            #if i == 10:
+            #    break
+            #else:
+            #    i+=1
+            one_hot_target = torch.tensor(np.eye(args.num_class)[target])
             data, target = data.to(device), target.to(device)
             output = model(data)
 
-            if len(target.size()) == 1:
-                loss = F.cross_entropy(output, target, reduction="none")
-            else:
-                loss = -torch.sum(F.log_softmax(output, dim=1) * target, dim=1)
+            loss = F.cross_entropy(output, target, reduction='none')
 
             output = F.softmax(output, dim=1)
 
             losses.append(loss.cpu().numpy())
             softmax.append(output.cpu().numpy())
-
+    #print(len(softmax))
+    #print(len(losses))
     return np.concatenate(softmax), np.concatenate(losses)
 
 
@@ -122,21 +125,24 @@ def train(args, model, device, loader, optimizer, epoch, ema_optimizer, criterio
     # data, complex_targets, target
     i = 0
     for data, _, target in tqdm(loader):
-        # if i == 10:
-        #     break
-        # else:
-        #     i+=1
+        #if i == 10:
+        #    break
+        #else:
+        #    i+=1
         # One-hot encode single-digit labels
         # if len(target.size()) == 1:
         #     target = torch.zeros(target.size(0), args.num_class.scatter_(1, target.view(-1, 1), 1))
         # print(target.shape)
-        one_hot_target = torch.tensor(np.eye(args.num_class)[target])
-        
+        if len(target.size()) == 1:
+            one_hot_target = torch.tensor(np.eye(args.num_class)[target])
+        else:
+            one_hot_target = targets
+
         data, target = data.to(device), one_hot_target.to(device)
 
         # SLN
-        if args.sigma > 0:
-            target += args.sigma * torch.randn(target.size(), device=device)
+        #if args.sigma > 0:
+        #    target += args.sigma * torch.randn(target.size(), device=device)
 
         # Calculate loss
         output = model(data)
@@ -174,10 +180,11 @@ def test(args, model, device, loader, criterion=F.cross_entropy):
     i = 0
     with torch.no_grad():
         for data, target in tqdm(loader):
-            # if i == 10:
-            #     break
-            # else:
-            #     i += 1
+            #if i == 10:
+            #    break
+            #else:
+            #    i += 1
+            #one_hot_target = torch.tensor(np.eye(args.num_class)[target])
 
             data, target = data.to(device), target.to(device)
 
@@ -187,8 +194,12 @@ def test(args, model, device, loader, criterion=F.cross_entropy):
             test_loss += criterion(output, target)
 
             # Check for correct prediction
-            # pred = output.argmax(dim=1, keepdim=True)
-            # correct += pred.eq(target.view_as(pred)).sum()
+            pred = output.argmax(dim=1, keepdim=True)
+
+            if len(target.size()) == 2:
+                target = target.argmax(dim=1, keepdim=True)
+
+            correct += pred.eq(target.view_as(pred)).sum()
 
     # Return average test loss and test accuracy
     return test_loss.item() / len(loader.dataset), correct.item() / len(loader.dataset)
@@ -199,6 +210,7 @@ def save_log(log, train_loss, train_acc, test_loss, test_acc, test_loss_NoEMA, t
     log['train_acc'].append(train_acc)
     log['test_loss'].append(test_loss)
     log['test_acc'].append(test_acc)
+    print(f'Train acc: {train_acc}, Test acc: {test_acc}, Test acc no EMA: {test_acc_NoEMA}')
     log['test_loss_NoEMA'].append(test_loss_NoEMA)
     log['test_acc_NoEMA'].append(test_acc_NoEMA)
     return log
@@ -254,6 +266,25 @@ def load_data(args):
 
     return train_loader, test_loader, train_eval_loader, trainset, testset
 
+def save(model, ema_model, log):
+    try:
+        torch.save(model.state_dict(), 'model_state')
+        print('Successfully saved model params')
+    except:
+        print('Failed to save model params')
+
+    try:
+        torch.save(ema_model.state_dict(), 'ema_model_state')
+        print('Successfully saved ema_model params')
+    except:
+        print('Failed to save ema_model params')
+
+    try:
+        with open('training_log.json', 'w') as f:
+            json.dump(log, f)
+        print('Successfully saved training log')
+    except:
+        print('Failed to save training log')
 
 def run(args, workers=2):
     # #! theirs ###############################################
@@ -288,6 +319,7 @@ def run(args, workers=2):
     print(f'Number of classes: {args.num_class}')
 
     noisy_targets = trainset.labels
+    noisy_targets = np.eye(args.num_class)[noisy_targets]
 
     # one-hot encoding
     # labels2nums = {}
@@ -341,16 +373,16 @@ def run(args, workers=2):
         if epoch > args.correction:
             args.sigma = 0  # Stop SLN
 
-            output, losses = get_output(ema_model, device, train_eval_loader)
+            output, losses = get_output(ema_model, device, train_eval_loader, args)
             output = np.eye(args.num_class)[output.argmax(axis=1)]  # Predictions
 
             losses = (losses - min(losses)) / (max(losses) - min(losses))  # Normalize to range [0, 1]
             losses = losses.reshape([len(losses), 1])
 
             targets = losses * noisy_targets + (1 - losses) * output  # Label correction
-            trainset.targets = targets
+            trainset.labels = targets
             train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True,
-                                                       num_workers=1)
+                                                       num_workers=args.num_workers)
 
         train_loss, train_acc = train(args, model, device, train_loader, optimizer, epoch, ema_optimizer, criterion)
         test_loss, test_acc = test(args, ema_model, device, test_loader, criterion)
@@ -359,28 +391,11 @@ def run(args, workers=2):
         print('\nEpoch: {} Time: {:.1f}s.'.format(epoch, time.time() - t0))
         print('Train loss:\t{:.3f}\tTest loss:\t{:.3f}\tTest loss NoEMA:\t{:.3f}\t'.format(train_loss, test_loss,
                                                                                            test_loss_NoEMA))
+        save(model, ema_model, log)
 
     print('\nTotal training time: {:.1f}s.\n'.format(time.time() - total_t0))
 
-    try:
-        torch.save(model.state_dict(), 'model_state')
-        print('Successfully saved model params')
-    except:
-        print('Failed to save model params')
-
-    try:
-        torch.save(ema_model.state_dict(), 'ema_model_state')
-        print('Successfully saved ema_model params')
-    except:
-        print('Failed to save ema_model params')
-
-    try:
-        with open('training_log.json', 'w') as f:
-            json.dump(log, f)
-        print('Successfully saved training log')
-    except:
-        print('Failed to save training log')
-
+    save(model, ema_model, log)
 
 if __name__ == '__main__':
     args = parser.parse_args()
