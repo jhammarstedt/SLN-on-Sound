@@ -28,6 +28,18 @@ class SpectrogramDataset(Dataset):
         with open(labels_map, 'r') as fd:
             self.labels_map = json.load(fd)
 
+        lab = ['Domestic_sounds_and_home_sounds',
+                'Vehicle',
+                'Animal',
+                'Human_voice',
+                'Water',
+                'Mechanisms',
+                'Alarm',
+                'Human_group_actions',
+                'Explosion',
+                'Engine'
+               ]
+        self.labels_map = {k: v for v, k in enumerate(lab)}
         self.len = None
         self.labels_delim = labels_delimiter
         df = pd.read_csv(manifest_path)
