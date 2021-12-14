@@ -24,9 +24,10 @@ def model_helper(opt):
         ckpt = torch.load(pretrained)
         print("pretrained model {} with {} classes found.".format(pretrained, pretrained_fc))
     else:
-        if opt.pretrained:
+        if opt['pretrained']:
             pretrained_flag = True
-            ckpt = torch.load(opt.pretrained_path)
+            print("I'm doing stuff")
+            ckpt = torch.load(opt['pretrained_path'])
             
         else:
             pretrained_flag = False

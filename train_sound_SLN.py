@@ -98,10 +98,10 @@ def get_output(model, device, loader, args):
     i = 0
     with torch.no_grad():
         for data, _, target in loader:
-            #if i == 10:
-            #    break
-            #else:
-            #    i+=1
+            if i == 10:
+                break
+            else:
+                i+=1
             one_hot_target = torch.tensor(np.eye(args.num_class)[target])
             data, target = data.to(device), target.to(device)
             output = model(data)
@@ -112,8 +112,8 @@ def get_output(model, device, loader, args):
 
             losses.append(loss.cpu().numpy())
             softmax.append(output.cpu().numpy())
-    #print(len(softmax))
-    #print(len(losses))
+    print(len(np.concatenate(softmax)))
+    print(len(np.concatenate(losses)))
     return np.concatenate(softmax), np.concatenate(losses)
 
 
@@ -221,7 +221,7 @@ def train_dataloader(train_set, args, collate_fn, shuffle):
     return DataLoader(train_set, num_workers=args.num_workers, shuffle=shuffle,
                       sampler=None, collate_fn=collate_fn,
                       batch_size=args.cfg['opt']['batch_size'],
-                      pin_memory=False, drop_last=True)
+                      pin_memory=False, drop_last=False)
 
 
 def val_dataloader(val_set, args, shuffle):
@@ -336,7 +336,7 @@ def run(args, workers=2):
 
     # Wide ResNet28-2 model
     # model = Wide_ResNet(num_classes=args.num_class).cuda()
-
+    args.cfg['model']['pretrained'] = args.pretrained
     model = model_helper(args.cfg['model']).cuda()
     # MO model
     # ema_model = Wide_ResNet(num_classes=args.num_class).cuda()
@@ -367,7 +367,7 @@ def run(args, workers=2):
     # Training loop
     total_t0 = time.time()
     print('Starting training loop ...')
-    for epoch in range(1, args.epochs + 1):
+    for epoch in range(21, args.epochs + 1):
         t0 = time.time()
 
         # Label Correction on 250th epoch, without tuning
@@ -392,11 +392,11 @@ def run(args, workers=2):
         print('\nEpoch: {} Time: {:.1f}s.'.format(epoch, time.time() - t0))
         print('Train loss:\t{:.3f}\tTest loss:\t{:.3f}\tTest loss NoEMA:\t{:.3f}\t'.format(train_loss, test_loss,
                                                                                            test_loss_NoEMA))
-        save(model, ema_model, log)
+        #save(model, ema_model, log)
 
     print('\nTotal training time: {:.1f}s.\n'.format(time.time() - total_t0))
 
-    save(model, ema_model, log)
+    #save(model, ema_model, log)
 
 if __name__ == '__main__':
     args = parser.parse_args()
