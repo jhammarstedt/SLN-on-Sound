@@ -1,11 +1,10 @@
-import os
 import tqdm
 import numpy as np
 import torch
 import argparse
-from preproc.fsd50k_pytorch_master.src.models.fsd50k_lightning import FSD50k_Lightning
-from preproc.fsd50k_pytorch_master.src.data.fsd_eval_dataset import FSD50kEvalDataset, _collate_fn_eval
-from preproc.fsd50k_pytorch_master.src.utilities.metrics_helper import calculate_stats, d_prime
+from fsd50_src.src.models.fsd50k_lightning import FSD50k_Lightning
+from fsd50_src.src.data.fsd_eval_dataset import FSD50kEvalDataset
+from fsd50_src.src.utilities.metrics_helper import calculate_stats, d_prime
 
 parser = argparse.ArgumentParser()
 parser.description = "Evaluation script for FSD50k Baselines"

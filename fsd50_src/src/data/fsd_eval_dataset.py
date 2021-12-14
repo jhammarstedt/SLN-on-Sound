@@ -1,14 +1,12 @@
 import os
-import tqdm
-import glob
 import json
 import torch
 import numpy as np
 import pandas as pd
 from typing import Tuple, Optional
 from torch.utils.data import Dataset
-from preproc.fsd50k_pytorch_master.src.data.utils import load_audio
-from preproc.fsd50k_pytorch_master.src.data.audio_parser import AudioParser
+from fsd50_src.src.data.utils import load_audio
+from fsd50_src.src.data.audio_parser import AudioParser
 
 
 class FSD50kEvalDataset(Dataset):

@@ -1,11 +1,11 @@
 import os
 import argparse
 import pytorch_lightning as pl
-import preproc.fsd50k_pytorch_master.src.data.mixers as mixers
+import fsd50_src.src.data.mixers as mixers
 from pytorch_lightning.loggers import TensorBoardLogger
-from preproc.fsd50k_pytorch_master.src.models.fsd50k_lightning import FSD50k_Lightning
-from preproc.fsd50k_pytorch_master.src.data.transforms import get_transforms_fsd_chunks
-from preproc.fsd50k_pytorch_master.src.utilities.config_parser import parse_config, get_data_info
+from fsd50_src.src.models.fsd50k_lightning import FSD50k_Lightning
+from fsd50_src.src.data.transforms import get_transforms_fsd_chunks
+from fsd50_src.src.utilities.config_parser import parse_config, get_data_info
 
 parser = argparse.ArgumentParser()
 parser.description = "Training script for FSD50k baselines"

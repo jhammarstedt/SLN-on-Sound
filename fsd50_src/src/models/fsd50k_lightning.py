@@ -2,17 +2,14 @@ import os
 import torch
 import numpy as np
 from torch import nn
-from preproc.fsd50k_pytorch_master.src.models import crnn
-from preproc.fsd50k_pytorch_master.src.models import resnet
-from preproc.fsd50k_pytorch_master.src.models import vgglike
-from preproc.fsd50k_pytorch_master.src.models import densenet
+from fsd50_src.src.models import densenet, resnet, crnn, vgglike
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
-from preproc.fsd50k_pytorch_master.src.data.dataset import SpectrogramDataset
+from fsd50_src.src.data.dataset import SpectrogramDataset
 from sklearn.metrics import average_precision_score
-from preproc.fsd50k_pytorch_master.src.optim.focal_loss import SigmoidFocalLoss
-from preproc.fsd50k_pytorch_master.src.data.utils import _collate_fn, _collate_fn_multiclass
-from preproc.fsd50k_pytorch_master.src.data.fsd_eval_dataset import FSD50kEvalDataset, _collate_fn_eval
+from fsd50_src.src.optim.focal_loss import SigmoidFocalLoss
+from fsd50_src.src.data.utils import _collate_fn, _collate_fn_multiclass
+from fsd50_src.src.data.fsd_eval_dataset import FSD50kEvalDataset, _collate_fn_eval
 
 
 def model_helper(opt):

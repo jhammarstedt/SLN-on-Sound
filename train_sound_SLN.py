@@ -1,10 +1,8 @@
 import argparse
 import json
-# New code
 import os
 import psutil
 import time
-from sys import platform
 
 from tqdm import tqdm
 import numpy as np
@@ -12,18 +10,13 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from torch.nn import BCEWithLogitsLoss
-import pytorch_lightning as pl
 
-import preproc.fsd50k_pytorch_master.src.data.mixers as mixers
-from preproc.fsd50k_pytorch_master.src.data.transforms import get_transforms_fsd_chunks
-from preproc.fsd50k_pytorch_master.src.data.utils import _collate_fn_multiclass, _collate_fn
-from preproc.fsd50k_pytorch_master.src.utilities.config_parser import parse_config, get_data_info
-from preproc.fsd50k_pytorch_master.src.data.dataset import SpectrogramDataset
-from preproc.fsd50k_pytorch_master.src.models.fsd50k_lightning import model_helper, FSD50k_Lightning
-#import evaldataset
-from preproc.fsd50k_pytorch_master.src.data.fsd_eval_dataset import FSD50kEvalDataset,_collate_fn_eval
-from resnet import Wide_ResNet
+from fsd50_src.src.data.transforms import get_transforms_fsd_chunks
+from fsd50_src.src.data.utils import _collate_fn_multiclass, _collate_fn
+from fsd50_src.src.utilities.config_parser import parse_config, get_data_info
+from fsd50_src.src.data.dataset import SpectrogramDataset
+from fsd50_src.src.models.fsd50k_lightning import model_helper
+from fsd50_src.src.data.fsd_eval_dataset import FSD50kEvalDataset,_collate_fn_eval
 
 
 parser = argparse.ArgumentParser()
@@ -91,18 +84,12 @@ class WeightEMA(object):
 
 
 # Get output
-def get_output(model, device, loader, args):
+def get_output(model, device, loader):
     softmax = []
     losses = []
     model.eval()
-    i = 0
     with torch.no_grad():
         for data, _, target in loader:
-            #if i == 10:
-            #    break
-            #else:
-            #    i+=1
-            one_hot_target = torch.tensor(np.eye(args.num_class)[target])
             data, target = data.to(device), target.to(device)
             output = model(data)
 
@@ -117,7 +104,7 @@ def get_output(model, device, loader, args):
     return np.concatenate(softmax), np.concatenate(losses)
 
 
-# Train on Wide ResNet-28-2
+# Train on ResNet-28-2
 def train(args, model, device, loader, optimizer, epoch, ema_optimizer, criterion):
     model.train()
     train_loss = torch.zeros(1, device=device)
@@ -137,7 +124,7 @@ def train(args, model, device, loader, optimizer, epoch, ema_optimizer, criterio
         if len(target.size()) == 1:
             one_hot_target = torch.tensor(np.eye(args.num_class)[target])
         else:
-            one_hot_target = targets
+            one_hot_target = target
 
         data, target = data.to(device), one_hot_target.to(device)
 
@@ -287,25 +274,8 @@ def save(model, ema_model, log):
     except:
         print('Failed to save training log')
 
-def run(args, workers=2):
-    # #! theirs ###############################################
 
-    # ckpt_fd = "{}".format(args.output_directory) + "/{epoch:02d}_{train_mAP:.3f}_{val_mAP:.3f}"
-    # ckpt_callback = pl.callbacks.model_checkpoint.ModelCheckpoint(
-    #     filepath=ckpt_fd,
-    #     verbose=True, save_top_k=-1
-    # )
-    # precision = 16 if args.fp16 else 32
-    # trainer = pl.Trainer(gpus=args.gpus, max_epochs=args.epochs,
-    #                      precision=precision, accelerator="dp",
-    #                      num_sanity_val_steps=4170,
-    #                      callbacks=[ckpt_callback, es_cb],
-    #                      resume_from_checkpoint=args.resume_from,
-    #                      logger=TensorBoardLogger(args.log_directory))
-    # trainer.fit(net)
-
-    # #! theirs ###############################################
-
+def run(args):
     process = psutil.Process(os.getpid())
     print(f'Initial memory usage: {process.memory_info().rss * 9.31e-10}')
 
@@ -322,20 +292,6 @@ def run(args, workers=2):
     noisy_targets = trainset.labels
     noisy_targets = np.eye(args.num_class)[noisy_targets]
 
-    # one-hot encoding
-    # labels2nums = {}
-    # labels = []
-    # i = 0
-    # for label in noisy_targets:
-    #     if label not in labels2nums:
-    #         labels2nums[label] = i
-    #         i += 1
-    #     labels.append(labels2nums[label])
-    # print(i)
-    # noisy_targets = np.eye(args.num_class)[labels]
-
-    # Wide ResNet28-2 model
-    # model = Wide_ResNet(num_classes=args.num_class).cuda()
     args.cfg['model']['pretrained'] = args.pretrained
     model = model_helper(args.cfg['model']).cuda()
     # MO model
@@ -351,7 +307,6 @@ def run(args, workers=2):
     ema_optimizer = WeightEMA(model, ema_model)
 
     # criterion = BCEWithLogitsLoss(args.cw)
-
     criterion = F.cross_entropy
 
     log = {
@@ -407,6 +362,7 @@ def run(args, workers=2):
 
     save(model, ema_model, log)
 
+
 if __name__ == '__main__':
     args = parser.parse_args()
     print(args)
@@ -425,11 +381,6 @@ if __name__ == '__main__':
     cfg['data'] = data_cfg
     args.cfg = cfg
 
-    # es_cb = pl.callbacks.EarlyStopping("val_mAP", mode="max", verbose=True, patience=10)
-
-    # mixer = mixers.BackgroundAddMixer()
-    #
-    # args.tr_mixer = mixers.UseMixerWithProb(mixer, args.mixer_prob)
     args.tr_mixer = None
 
     tr_tfs = get_transforms_fsd_chunks(True, 101)
@@ -438,8 +389,4 @@ if __name__ == '__main__':
     args.tr_tfs = tr_tfs
     args.val_tfs = val_tfs
 
-    workers = 2
-    if platform == 'win32':
-        torch.multiprocessing.freeze_support()
-        workers = 1
     run(args)
