@@ -129,8 +129,8 @@ def train(args, model, device, loader, optimizer, epoch, ema_optimizer, criterio
         data, target = data.to(device), one_hot_target.to(device)
 
         # SLN
-        #if args.sigma > 0:
-        #    target += args.sigma * torch.randn(target.size(), device=device)
+        if args.sigma > 0:
+            target += args.sigma * torch.randn(target.size(), device=device)
 
         # Calculate loss
         output = model(data)
@@ -323,7 +323,7 @@ def run(args):
     # Training loop
     total_t0 = time.time()
     print('Starting training loop ...')
-    for epoch in range(21, args.epochs + 1):
+    for epoch in range(0, args.epochs + 1):
         t0 = time.time()
 
         # Label Correction on 250th epoch, without tuning
