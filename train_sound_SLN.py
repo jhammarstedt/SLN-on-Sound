@@ -98,10 +98,10 @@ def get_output(model, device, loader, args):
     i = 0
     with torch.no_grad():
         for data, _, target in loader:
-            if i == 10:
-                break
-            else:
-                i+=1
+            #if i == 10:
+            #    break
+            #else:
+            #    i+=1
             one_hot_target = torch.tensor(np.eye(args.num_class)[target])
             data, target = data.to(device), target.to(device)
             output = model(data)
@@ -112,8 +112,8 @@ def get_output(model, device, loader, args):
 
             losses.append(loss.cpu().numpy())
             softmax.append(output.cpu().numpy())
-    print(len(np.concatenate(softmax)))
-    print(len(np.concatenate(losses)))
+    #print(len(np.concatenate(softmax)))
+    #print(len(np.concatenate(losses)))
     return np.concatenate(softmax), np.concatenate(losses)
 
 
@@ -340,6 +340,7 @@ def run(args, workers=2):
     model = model_helper(args.cfg['model']).cuda()
     # MO model
     # ema_model = Wide_ResNet(num_classes=args.num_class).cuda()
+    args.cfg['model']['pretrained_path'] = args.cfg['model']['pretrained_path_ema']
     ema_model = model_helper(args.cfg['model']).cuda()
     for param in ema_model.parameters():
         param.detach_()
@@ -372,6 +373,15 @@ def run(args, workers=2):
 
         # Label Correction on 250th epoch, without tuning
         if epoch > args.correction:
+            if args.cfg['model']['type'] == "multiclass":
+                collate_fn = _collate_fn_multiclass
+                mode = "multiclass"
+            elif args.cfg['model']['type'] == "multilabel":
+                collate_fn = _collate_fn
+                mode = "multilabel"
+            else:
+                raise ValueError("Model type not supported")
+            
             args.sigma = 0  # Stop SLN
 
             output, losses = get_output(ema_model, device, train_eval_loader, args)
@@ -381,9 +391,8 @@ def run(args, workers=2):
             losses = losses.reshape([len(losses), 1])
 
             targets = losses * noisy_targets + (1 - losses) * output  # Label correction
-            trainset.labels = targets
-            train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True,
-                                                       num_workers=args.num_workers)
+            trainset.labels = np.argmax(targets, axis=1)
+            train_loader = train_dataloader(trainset, args=args, collate_fn=collate_fn, shuffle=True)
 
         train_loss, train_acc = train(args, model, device, train_loader, optimizer, epoch, ema_optimizer, criterion)
         test_loss, test_acc = test(args, ema_model, device, test_loader, criterion)
@@ -392,11 +401,11 @@ def run(args, workers=2):
         print('\nEpoch: {} Time: {:.1f}s.'.format(epoch, time.time() - t0))
         print('Train loss:\t{:.3f}\tTest loss:\t{:.3f}\tTest loss NoEMA:\t{:.3f}\t'.format(train_loss, test_loss,
                                                                                            test_loss_NoEMA))
-        #save(model, ema_model, log)
+        save(model, ema_model, log)
 
     print('\nTotal training time: {:.1f}s.\n'.format(time.time() - total_t0))
 
-    #save(model, ema_model, log)
+    save(model, ema_model, log)
 
 if __name__ == '__main__':
     args = parser.parse_args()
