@@ -1,16 +1,14 @@
 from sys import platform
-import argparse
 import time
 import json
 import numpy as np
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
-import torchvision
 import torchvision.transforms as transforms
 
 from data import get_cifar
-from resnet import Wide_ResNet
+from network import Wide_ResNet
 
 # Weight Exponential Moving Average
 class WeightEMA(object):
@@ -132,10 +130,10 @@ def save_log(log, train_loss, train_acc, test_loss, test_acc, test_loss_NoEMA, t
     return log
 
 
-def run(workers=2):
+def run(workers=2,sigma=1,epochs=300,experiment=False):
     args = {
         'runs': 5,
-        'epochs': 300,
+        'epochs': epochs,
         'stdev': 0.5,
         'lr': 0.001,
         'noise_rate': 0.4,
@@ -148,7 +146,7 @@ def run(workers=2):
         'gpu_id': 0,
 
         # cifar10
-        'sigma': 1 # symmetric
+        'sigma': sigma # symmetric
         #sigma: 0.5 # asymmetric
 
         # cifar100
@@ -218,26 +216,33 @@ def run(workers=2):
         print('Train loss:\t{:.3f}\tTest loss:\t{:.3f}\tTest loss NoEMA:\t{:.3f}\t'.format(train_loss, test_loss, test_loss_NoEMA))
 
     print('\nTotal training time: {:.1f}s.\n'.format(time.time()-total_t0))
+    if not experiment: #then we save model
+        try:
+            torch.save(model.state_dict(), 'model_state')
+            print('Successfully saved model params')
+        except:
+            print('Failed to save model params')
 
-    try:
-        torch.save(model.state_dict(), 'model_state')
-        print('Successfully saved model params')
-    except:
-        print('Failed to save model params')
+        try:
+            torch.save(ema_model.state_dict(), 'ema_model_state')
+            print('Successfully saved ema_model params')
+        except:
+            print('Failed to save ema_model params')
 
-    try:
-        torch.save(ema_model.state_dict(), 'ema_model_state')
-        print('Successfully saved ema_model params')
-    except:
-        print('Failed to save ema_model params')
-
-    try:
-        with open('training_log.json', 'w') as f:
-            json.dump(log, f)
-        print('Successfully saved training log')
-    except:
-        print('Failed to save training log')
-
+        try:
+            with open('training_log.json', 'w') as f:
+                json.dump(log, f)
+            print('Successfully saved training log')
+        except:
+            print('Failed to save training log')
+    else:
+        try:
+            with open('ablation_study/training_log.json', 'w') as f:
+                json.dump(log, f)
+            print('Successfully saved training log')
+        except:
+            print('Failed to save training log')
+        
 
 if __name__ == '__main__':
     workers = 2
