@@ -130,10 +130,11 @@ def save_log(log, train_loss, train_acc, test_loss, test_acc, test_loss_NoEMA, t
     return log
 
 
-def run(workers=2,sigma=1,epochs=300,experiment=False):
+def run(workers=2):#,sigma=1,epochs=300,experiment=False,type="symmetric"):
+    
     args = {
         'runs': 5,
-        'epochs': epochs,
+        'epochs': 300,
         'stdev': 0.5,
         'lr': 0.001,
         'noise_rate': 0.4,
@@ -146,7 +147,7 @@ def run(workers=2,sigma=1,epochs=300,experiment=False):
         'gpu_id': 0,
 
         # cifar10
-        'sigma': sigma # symmetric
+        'sigma': 1 # symmetric
         #sigma: 0.5 # asymmetric
 
         # cifar100
@@ -236,12 +237,15 @@ def run(workers=2,sigma=1,epochs=300,experiment=False):
         except:
             print('Failed to save training log')
     else:
-        try:
-            with open('ablation_study/training_log.json', 'w') as f:
-                json.dump(log, f)
-            print('Successfully saved training log')
-        except:
-            print('Failed to save training log')
+        return log
+
+        # try:
+        #     with open('ablation_study/training_log.json', 'w') as f:
+        #         run_log = {f"run_{i}":}
+        #         json.dump(log, f)
+        #     print('Successfully saved training log')
+        # except:
+        #     print('Failed to save training log')
         
 
 if __name__ == '__main__':
