@@ -3,7 +3,8 @@ import torch.nn as nn
 import torch.nn.init as init
 import torch.nn.functional as F
 import torch
-"""Wide resnet implementaion
+"""
+Wide resnet implementaion
 From the paper: "Wide Residual Networks" - https://arxiv.org/pdf/1605.07146.pdf
 
 """
