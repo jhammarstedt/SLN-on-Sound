@@ -11,6 +11,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
+from helpers import WeightExponentialMovingAverage
+
 from fsd50_src.src.data.transforms import get_transforms_fsd_chunks
 from fsd50_src.src.data.utils import _collate_fn_multiclass, _collate_fn
 from fsd50_src.src.utilities.config_parser import parse_config, get_data_info
@@ -59,28 +61,6 @@ parser.add_argument("--sigma", type=int, default=1,
                     help=" for cifar 10: 1 == symmetric, 0.5 == asymetric")
 parser.add_argument("--pretrained", type=bool, default=False,
                     help=" Set to true to use pretrained model")
-
-# Weight Exponential Moving Average
-class WeightEMA(object):
-    def __init__(self, model, ema_model, alpha=0.999):
-        self.model = model
-        self.ema_model = ema_model
-        self.alpha = alpha
-        self.params = list(model.state_dict().values())
-        self.ema_params = list(ema_model.state_dict().values())
-
-        # copy params
-        for param, ema_param in zip(self.params, self.ema_params):
-            param.data.copy_(ema_param.data)
-
-    def step(self):  # update moving average
-        one_minus_alpha = 1.0 - self.alpha
-        for param, ema_param in zip(self.params, self.ema_params):
-            if param.type() == 'torch.cuda.LongTensor':
-                ema_param = param
-            else:
-                ema_param.mul_(self.alpha)
-                ema_param.add_(param * one_minus_alpha)
 
 
 # Get output
@@ -304,7 +284,7 @@ def run(args):
     # Optimizers
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum,
                           weight_decay=args.weight_decay)
-    ema_optimizer = WeightEMA(model, ema_model)
+    ema_optimizer = WeightExponentialMovingAverage(model, ema_model)
 
     # criterion = BCEWithLogitsLoss(args.cw)
     criterion = F.cross_entropy

@@ -9,28 +9,7 @@ import torchvision.transforms as transforms
 
 from data import get_cifar
 from network import Wide_ResNet
-
-# Weight Exponential Moving Average
-class WeightEMA(object):
-    def __init__(self, model, ema_model, alpha=0.999):
-        self.model = model
-        self.ema_model = ema_model
-        self.alpha = alpha
-        self.params = list(model.state_dict().values())
-        self.ema_params = list(ema_model.state_dict().values())
-
-        # copy params
-        for param, ema_param in zip(self.params, self.ema_params):
-            param.data.copy_(ema_param.data)
-
-    def step(self): # update moving average
-        one_minus_alpha = 1.0 - self.alpha
-        for param, ema_param in zip(self.params, self.ema_params):
-            if param.type()=='torch.cuda.LongTensor':
-                ema_param = param
-            else:
-                ema_param.mul_(self.alpha)
-                ema_param.add_(param * one_minus_alpha)
+from helpers import WeightExponentialMovingAverage
 
 # Get output
 def get_output(model, device, loader):
@@ -178,7 +157,7 @@ def run(workers=2):#,sigma=1,epochs=300,experiment=False,type="symmetric"):
 
     # Optimizers
     optimizer = optim.SGD(model.parameters(), lr=args['lr'], momentum=args['momentum'], weight_decay=args['weight_decay'])
-    ema_optimizer = WeightEMA(model, ema_model)
+    ema_optimizer = WeightExponentialMovingAverage(model, ema_model)
 
     log = {
         'train_loss': [],
