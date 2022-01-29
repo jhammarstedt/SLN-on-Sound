@@ -4,7 +4,9 @@ from torchvision.datasets import CIFAR10, CIFAR100
 import os
 import numpy as np
 import pandas as pd
+import logging as log
 
+log.basicConfig(level=log.DEBUG)
 
 def get_cifar(dataset: str = 'cifar10',
               path: str = './data-cifar',
@@ -44,10 +46,10 @@ def get_cifar(dataset: str = 'cifar10',
     noisy_labels_path = os.path.join(labels_path, 'noisy_labels_' + dataset + '_' + noise_mode + '_' + str(noise_rate) + '.csv')
 
     if noise_mode == '':
-        print('Getting clean dataset')
+        log.info('Getting clean dataset')
 
     elif noise_mode in ['asym', 'sym']:
-        print(f'Getting dataset with {noise_mode}metric noise')
+        log.info(f'Getting dataset with {noise_mode}metric noise')
         if not os.path.exists(noisy_labels_path):
             generate_noisy_labels(dataset, labels_path, noise_mode, noise_rate, train_dataset=train_dataset)
 
@@ -109,7 +111,7 @@ def generate_noisy_labels(dataset='cifar10', path='./labels', noise_mode='sym', 
         raise NotImplementedError
 
     labels = pd.DataFrame({'clean': clean_labels, 'noisy': noisy_labels})
-    print('Rate of noisy labels: {}'.format((labels.clean != labels.noisy).sum() / labels.shape[0]))
+    log.info('Rate of noisy labels: {}'.format((labels.clean != labels.noisy).sum() / labels.shape[0]))
     labels.to_csv(os.path.join(path, 'noisy_labels_' + dataset + '_' + noise_mode + '_' + str(noise_rate) + '.csv'),
                   index=False)
 
