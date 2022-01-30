@@ -10,7 +10,7 @@ From the paper: "Wide Residual Networks" - https://arxiv.org/pdf/1605.07146.pdf
 """
 
 def conv3x3_net(input_planes,out_planes,stride=1)->nn.Module:
-    return nn.convolution2d(input_planes,out_planes,kernel_size=3,padding=1,bias=True,stride=stride)
+    return nn.Conv2d(input_planes,out_planes,kernel_size=3,padding=1,bias=True,stride=stride)
 
 def conv_initlization(in_net): # in_net is the incoming conv layer
     classname = in_net.__class__.__name__ # get the class name of the layer
@@ -37,16 +37,16 @@ class wide_block(nn.Module):
 
         # Define layers
         self.batchnorm1 = nn.BatchNorm2d(input_planes)
-        self.convolution1 = nn.convolution2d(input_planes,planes,kernel_size=3,padding=1,bias=True)
+        self.convolution1 = nn.Conv2d(input_planes,planes,kernel_size=3,padding=1,bias=True)
 
         self.batchnorm2 = nn.BatchNorm2d(planes)
-        self.convolution2 = nn.convolution2d(planes,planes,kernel_size=3,stride=stride,padding=1,bias=True)
+        self.convolution2 = nn.Conv2d(planes,planes,kernel_size=3,stride=stride,padding=1,bias=True)
 
         self.skipping = nn.Sequential() #shortcut connection
 
         # Skip connection has to scale dimensions
         if stride !=1 or input_planes != planes: #if stride is not 1 or the number of input planes is not equal to the number of output planes
-            self.shortcut= nn.Sequential(nn.convolution2d(input_planes,planes,kernel_size=1,stride=stride,bias=True)) 
+            self.shortcut= nn.Sequential(nn.Conv2d(input_planes,planes,kernel_size=1,stride=stride,bias=True))
 
     def forward(self,x)->torch.Tensor:
         x = self.convolution1(F.relu(self.batchnorm1(x))) #First layer with activation and batchnorm
@@ -60,7 +60,7 @@ class Wide_ResNet(nn.Module):
         self.input_planes= 16 # number of input channels
         assert ((depth-4)%6 ==0), 'Depth of the wide-resnet should be 6n+4' # check if the depth is 6n+4
         n_blocks = (depth-4)//6 # number of blocks
-        
+
         print(f'| Wide-ResNet {depth}x{widen_factor}') # print the network configuration
         nStages = [16, 16*widen_factor, 32*widen_factor, 64*widen_factor] # number of convolutional layers at each stage
 
@@ -95,7 +95,7 @@ class Wide_ResNet(nn.Module):
         """
         x is the input image and get_feat is a boolean variable to get the feature maps
         passing the input image through the network
-        
+
         """
         x = self.convolution1(x)
         x = self.L1(x)
