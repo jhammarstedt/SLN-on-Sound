@@ -41,40 +41,38 @@ def get_models(args, device):
 def get_prediction(model, device, data_loader):
     model.eval()
 
-    predictions = []
-    losses = []
+    n = len(data_loader)
+    predictions = torch.zeros(n, device=device)
+    losses = torch.zeros(n, device=device)
     with torch.no_grad():
+        i = 0
         for X, Y in data_loader:
             X, Y = X.to(device), Y.to(device)
             Y_pred = model(X)
-
-            # TODO when is the size == 1? do we need it?
-            if len(Y.size()) == 1:
-                loss = F.cross_entropy(Y_pred, Y, reduction="none")
-            else:
-                loss = -torch.sum(F.log_softmax(Y_pred, dim=1) * Y, dim=1)
-
             output = F.softmax(Y_pred, dim=1)
+            loss = -torch.sum(torch.log(output) * Y, dim=1)
 
-            losses.append(loss.cpu().numpy())
-            predictions.append(output.cpu().numpy())
+            predictions[i] = output.argmax(axis=1)
+            losses[i] = loss
+            i += 1
 
-    return np.concatenate(predictions), np.concatenate(losses)
+    return predictions.cpu().numpy(), losses.cpu().numpy()
 
 
 def label_correction(args, momentum_model, device, train_eval_loader, train_set, original_labels):
     predictions, losses = get_prediction(momentum_model, device, train_eval_loader)
-    predictions_one_hot = np.eye(args.num_class)[predictions.argmax(axis=1)]  # Predictions
+    predictions_one_hot = np.eye(args.num_class)[predictions]  # Predictions
 
     min_loss, max_loss = losses.min(), losses.max()
-    losses = (losses - min_loss) / (max_loss - min_loss)
-    losses = losses.reshape([losses.shape[0], 1])
+
+    normalized_loss = (losses - min_loss) / (max_loss - min_loss)
+    normalized_loss = normalized_loss[:, None]
 
     # Label correction
-    targets = losses * original_labels + (1 - losses) * predictions_one_hot
+    y_correction = normalized_loss * original_labels + (1 - normalized_loss) * predictions_one_hot
 
     # update labels
-    train_set.targets = targets
+    train_set.targets = y_correction
     return get_data_loader(train_set, args.batch_size, shuffle=True, num_workers=args.num_workers)
 
 
@@ -87,6 +85,7 @@ def main(args):
 
 
     model, momentum_model = get_models(args.device)
+    momentum_model.load_state_dict(model.state_dict())
 
     optimizer = torch.optim.SGD(
         model.parameters(),
@@ -99,7 +98,7 @@ def main(args):
 
 
     for epoch in range(1, args.epochs + 1):
-        if epoch >= args.correction:
+        if epoch > args.correction:
             args.sigma = 0.
             label_correction(args, momentum_model, device, train_eval_loader, train_set, original_train_Y)
 

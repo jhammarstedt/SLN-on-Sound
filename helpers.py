@@ -5,15 +5,10 @@ class WeightExponentialMovingAverage:
         self.alpha = alpha
         self.params = list(model.state_dict().values())
         self.momentum_params = list(momentum_model.state_dict().values())
-        for param, ema_param in zip(self.params, self.momentum_params):
-            param.data.copy_(ema_param.data)
 
     def step(self):
         for param, momentum_param in zip(self.params, self.momentum_params):
-            if param.type() != 'torch.cuda.LongTensor':
-                momentum_param.mul_(self.alpha)
-                momentum_param.add_(param * (1.0 - self.alpha))
-
+            momentum_param.copy_(momentum_param.data*self.alpha + param.data*(1.0 - self.alpha))
 
 class TrainingLogger:
     def __init__(self):
@@ -51,4 +46,3 @@ class TrainingLogger:
         }
         with open(path, 'w') as f:
             json.dump(data, f)
-
