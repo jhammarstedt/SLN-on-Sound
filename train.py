@@ -11,7 +11,6 @@ from network import Wide_ResNet
 from helpers import WeightExponentialMovingAverage, TrainingLogger
 
 
-log.basicConfig(level=log.DEBUG)
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
@@ -45,6 +44,7 @@ def get_models(args):
 
 
 def get_prediction(model, data_loader):
+    log.debug('Getting predictions ...')
     model.eval()
 
     predictions = []
@@ -63,6 +63,7 @@ def get_prediction(model, data_loader):
 
 
 def label_correction(args, momentum_model, train_eval_loader, train_set, original_labels):
+    log.debug('Correcting labels ...')
     predictions, losses = get_prediction(momentum_model, train_eval_loader)
     predictions_one_hot = np.eye(args.num_class)[predictions.argmax(axis=1)]  # Predictions
 
@@ -80,6 +81,7 @@ def label_correction(args, momentum_model, train_eval_loader, train_set, origina
 
 
 def main(args):
+    log.getLogger().setLevel(args.loglevel.upper())
     log.info(f'Using {DEVICE} for torch training.')
 
     train_loader, train_set, test_loader, train_eval_loader = get_data(args)
@@ -99,21 +101,22 @@ def main(args):
     optimizer_momentum = WeightExponentialMovingAverage(model, momentum_model)
     training_log = TrainingLogger()
 
-
+    print("####### Starting training #######")
     for epoch in range(1, args.epochs + 1):
         epoch_start = time.time()
         if epoch >= args.correction:
             args.sigma = 0.
-            label_correction(args, momentum_model, DEVICE, train_eval_loader, train_set, original_train_Y)
+            label_correction(args, momentum_model, train_eval_loader, train_set, original_train_Y)
 
         train_loss, train_acc = _train_step(args, model, train_loader, optimizer, optimizer_momentum)
-        # test_loss, test_acc = _test_step(momentum_model, test_loader)
-        # test_loss_NoEMA, test_acc_NoEMA = _test_step(model, test_loader)
+        test_loss, test_acc = _test_step(momentum_model, test_loader)
+        test_loss_NoEMA, test_acc_NoEMA = _test_step(model, test_loader)
         training_log.save_epoch(train_loss, train_acc, test_loss, test_acc, test_loss_NoEMA, test_acc_NoEMA)
         training_log.print_last_epoch(epoch=epoch, logger=log, time=time.time() - epoch_start)
 
 
 def _train_step(args, model, data_loader, optimizer, momenturm_optimizer):
+    log.debug('Train step ...')
     batch_losses = []
     batch_predictions = []
     model.train()
@@ -132,29 +135,27 @@ def _train_step(args, model, data_loader, optimizer, momenturm_optimizer):
         # backpropagation
         batch_loss.backward()
         optimizer.step()
-        # momenturm_optimizer.step()
+        momenturm_optimizer.step()
 
         batch_predictions += y.argmax(dim=1).eq(y_pred.argmax(dim=1)).tolist()
-        batch_losses += loss_per_input.detach().toList()
-        break
+        batch_losses += loss_per_input.detach().tolist()
 
     return sum(batch_losses) / len(batch_losses), sum(batch_predictions) / len(batch_predictions)
 
+
 def _test_step(model, data_loader):
+    log.debug('Test step ...')
     batch_losses = []
     batch_predictions = []
     model.eval()
     with torch.no_grad():
         for _X, _y in data_loader:
             X, y = _X.to(DEVICE), _y.to(DEVICE)
-
             y_pred = model(X)
+            batch_losses += F.cross_entropy(y_pred, y, reduction='none').tolist()
+            batch_predictions += y.eq(y_pred.argmax(dim=1)).tolist()
 
-            # TODO why different loss then traning
-            batch_loss = F.cross_entropy(y_pred, y, reduction='sum')
-            batch_prediction = y_pred.argmax(dim=1, keepdim=True)
-
-    return batch_losses.mean(), batch_predictions.mean()
+    return sum(batch_losses) / len(batch_losses), sum(batch_predictions) / len(batch_predictions)
 
 
 if __name__ == '__main__':

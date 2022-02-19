@@ -1,5 +1,6 @@
 import json
 
+
 class WeightExponentialMovingAverage:
     def __init__(self, model, momentum_model, alpha=0.999):
         self.alpha = alpha
@@ -9,6 +10,7 @@ class WeightExponentialMovingAverage:
     def step(self):
         for param, momentum_param in zip(self.params, self.momentum_params):
             momentum_param.copy_(momentum_param.data*self.alpha + param.data*(1.0 - self.alpha))
+
 
 class TrainingLogger:
     def __init__(self):

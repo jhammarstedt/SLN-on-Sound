@@ -17,20 +17,15 @@ def get_args():
     parser.add_argument("--stdev", type=float, default=0.5, help="How much added noise")
     parser.add_argument('--seed', type=int, default=0, help='random seed (default: 0)')
     parser.add_argument("--resume_from", type=str, help="checkpoint path to continue training from")
-    parser.add_argument("--cw", type=str, required=False,
-                        help="path to serialized torch tensor containing class weights")
+    parser.add_argument("--cw", type=str, required=False, help="path to serialized torch tensor containing class weights")
     parser.add_argument("--pretrained", type=bool, default=False, help=" Set to true to use pretrained model")
+    parser.add_argument("--momentum", type=float, default=0.9, help="...")
+    parser.add_argument("--weight_decay", type=float, default=5e-4, help="...")
+    parser.add_argument("--correction", type=int, default=20, help="...")
     # FSD50k specific
     parser.add_argument("--cfg_file", type=str, help='path to cfg file')
     parser.add_argument("--expdir", "-e", type=str, help="directory for logging and checkpointing")
 
+    parser.add_argument('--loglevel', default='info', help='Provide logging level. Example --loglevel debug, default=warning')
 
-    # TODO: not sure for what
-    parser.add_argument("--momentum", type=float, default=0.9,
-                        help="...")
-    parser.add_argument("--weight_decay", type=float, default=5e-4,
-                        help="...")
-
-    parser.add_argument("--correction", type=int, default=20,
-                        help="...")
     return parser.parse_args()
