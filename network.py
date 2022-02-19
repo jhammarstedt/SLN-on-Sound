@@ -59,7 +59,7 @@ class Wide_ResNet(nn.Module):
         self.input_planes= 16 # number of input channels
         assert ((depth-4)%6 ==0), 'Depth of the wide-resnet should be 6n+4' # check if the depth is 6n+4
         n_blocks = (depth-4)//6 # number of blocks
-        
+
         print(f'| Wide-ResNet {depth}x{widen_factor}') # print the network configuration
         nStages = [16, 16*widen_factor, 32*widen_factor, 64*widen_factor] # number of convolutional layers at each stage
 
@@ -94,7 +94,7 @@ class Wide_ResNet(nn.Module):
         """
         x is the input image and get_feat is a boolean variable to get the feature maps
         passing the input image through the network
-        
+
         """
         x = self.convolution1(x)
         x = self.L1(x)
