@@ -8,9 +8,8 @@ Wide resnet implementaion
 From the paper: "Wide Residual Networks" - https://arxiv.org/pdf/1605.07146.pdf
 
 """
-
 def conv3x3_net(input_planes,out_planes,stride=1)->nn.Module:
-    return nn.convolution2d(input_planes,out_planes,kernel_size=3,padding=1,bias=True,stride=stride)
+    return nn.Conv2d(input_planes,out_planes,kernel_size=3,padding=1,bias=True,stride=stride)
 
 def conv_initlization(in_net): # in_net is the incoming conv layer
     classname = in_net.__class__.__name__ # get the class name of the layer
@@ -37,16 +36,16 @@ class wide_block(nn.Module):
 
         # Define layers
         self.batchnorm1 = nn.BatchNorm2d(input_planes)
-        self.convolution1 = nn.convolution2d(input_planes,planes,kernel_size=3,padding=1,bias=True)
+        self.convolution1 = nn.Conv2d(input_planes,planes,kernel_size=3,padding=1,bias=True)
 
         self.batchnorm2 = nn.BatchNorm2d(planes)
-        self.convolution2 = nn.convolution2d(planes,planes,kernel_size=3,stride=stride,padding=1,bias=True)
+        self.convolution2 = nn.Conv2d(planes,planes,kernel_size=3,stride=stride,padding=1,bias=True)
 
         self.skipping = nn.Sequential() #shortcut connection
 
         # Skip connection has to scale dimensions
         if stride !=1 or input_planes != planes: #if stride is not 1 or the number of input planes is not equal to the number of output planes
-            self.shortcut= nn.Sequential(nn.convolution2d(input_planes,planes,kernel_size=1,stride=stride,bias=True)) 
+            self.shortcut= nn.Sequential(nn.Conv2d(input_planes,planes,kernel_size=1,stride=stride,bias=True))
 
     def forward(self,x)->torch.Tensor:
         x = self.convolution1(F.relu(self.batchnorm1(x))) #First layer with activation and batchnorm

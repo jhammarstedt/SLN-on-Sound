@@ -59,7 +59,7 @@ def train(args, model, device, loader, optimizer, epoch, ema_optimizer):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-
+ 
         # Update MO model
         if ema_optimizer:
             ema_optimizer.step()
@@ -111,27 +111,27 @@ def save_log(log, train_loss, train_acc, test_loss, test_acc, test_loss_NoEMA, t
 
 def run(workers=2):#,sigma=1,epochs=300,experiment=False,type="symmetric"):
     
-    args = {
-        'runs': 5,
-        'epochs': 300,
-        'stdev': 0.5,
-        'lr': 0.001,
-        'noise_rate': 0.4,
-        'momentum': 0.9,
-        'weight_decay': 5e-4,
-        'batch_size': 128,
-        'correction': 250,
-        'num_class': 1,
-
-        'gpu_id': 0,
-
-        # cifar10
-        'sigma': 1 # symmetric
-        #sigma: 0.5 # asymmetric
-
-        # cifar100
-        #sigma: 0.2
-    }
+    # args = {
+    #     'runs': 5,
+    #     'epochs': 300,
+    #     'stdev': 0.5,
+    #     'lr': 0.001,
+    #     'noise_rate': 0.4,
+    #     'momentum': 0.9,
+    #     'weight_decay': 5e-4,
+    #     'batch_size': 128,
+    #     'correction': 250,
+    #     'num_class': 1,
+    #
+    #     'gpu_id': 0,
+    #
+    #     # cifar10
+    #     'sigma': 1 # symmetric
+    #     #sigma: 0.5 # asymmetric
+    #
+    #     # cifar100
+    #     #sigma: 0.2
+    # }
 
     device = torch.device('cuda:'+str(args['gpu_id']) if torch.cuda.is_available() else 'cpu')
     print(f'Using {device} for training')

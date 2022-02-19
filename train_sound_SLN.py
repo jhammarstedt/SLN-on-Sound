@@ -21,47 +21,6 @@ from fsd50_src.src.models.fsd50k_lightning import model_helper
 from fsd50_src.src.data.fsd_eval_dataset import FSD50kEvalDataset,_collate_fn_eval
 
 
-parser = argparse.ArgumentParser()
-parser.description = "Training script for FSD50k baselines"
-parser.add_argument("--cfg_file", type=str, help='path to cfg file')
-parser.add_argument("--expdir", "-e", type=str, help="directory for logging and checkpointing")
-parser.add_argument('--epochs', default=25, type=int, metavar='N', help='number of total epochs to run')
-parser.add_argument("--num_workers", type=int, default=4)
-parser.add_argument("--cw", type=str, required=False,
-                    help="path to serialized torch tensor containing class weights")
-parser.add_argument("--resume_from", type=str,
-                    help="checkpoint path to continue training from")
-parser.add_argument('--mixer_prob', type=float, default=0.75,
-                    help="background noise augmentation probability")
-parser.add_argument("--fp16", action="store_true",
-                    help='flag to train in FP16 mode')
-parser.add_argument("--gpus", type=int, default=0,
-                    help="Single or multiple gpus to train on. For multiple, use ', ' delimiter ")
-
-parser.add_argument("--runs", type=int, default=5,
-                    help="...")
-
-parser.add_argument("--lr", type=float, default=0.001,
-                    help="learning rate")
-parser.add_argument("--stdev", type=float, default=0.5,
-                    help="How much added noise")
-parser.add_argument("--momentum", type=float, default=0.9,
-                    help="...")
-parser.add_argument("--weight_decay", type=float, default=5e-4,
-                    help="...")
-parser.add_argument("--batch_size", type=int, default=256,
-                    help="...")
-parser.add_argument("--correction", type=int, default=20,
-                    help="...")
-parser.add_argument("--num_class", type=int, default=1,
-                    help="...")
-parser.add_argument("--gpu_id", type=int, default=0,
-                    help="...")
-parser.add_argument("--sigma", type=int, default=1,
-                    help=" for cifar 10: 1 == symmetric, 0.5 == asymetric")
-parser.add_argument("--pretrained", type=bool, default=False,
-                    help=" Set to true to use pretrained model")
-
 
 # Get output
 def get_output(model, device, loader):

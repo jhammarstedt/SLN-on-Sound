@@ -32,9 +32,12 @@ class TrainingLogger:
         self.test_loss_NoEMA.append(test_loss_NoEMA)
         self.test_acc_NoEMA.append(test_acc_NoEMA)
 
-    def print_last_epoch(self, logger=None):
-        log_string = 'Train loss:\t{:.3f}\tTest loss:\t{:.3f}\tTest loss NoEMA:\t{:.3f}\t'.format(
-            self.train_loss[-1], self.test_loss[-1], self.test_loss_NoEMA[-1])
+    def print_last_epoch(self, epoch, logger=None, time=None):
+        time_info = ''
+        if time:
+            time_info = '\tTime: {:.1f} min'.format(time / 60)
+        log_string = 'Epoch {} {}\tTrain loss:\t{:.3f}\tTest loss:\t{:.3f}\tTest loss NoEMA:\t{:.3f}\t'.format(
+            epoch, time_info, self.train_loss[-1], self.test_loss[-1], self.test_loss_NoEMA[-1])
         if not logger:
             print(log_string)
         else:
