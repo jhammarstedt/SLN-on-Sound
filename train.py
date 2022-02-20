@@ -142,7 +142,7 @@ def main(args):
         start_training(args,*training_bag)
     else: # if abliation study
         abs_study = Abliation_study(parameter="sigma")
-        abs_study.run_experiment(args, *training_bag)
+        abs_study.run_experiment(args, training_bag)
         abs_study.plot_experiment(args)
 
 def _train_step(args, model, data_loader, optimizer, momenturm_optimizer):
