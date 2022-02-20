@@ -156,10 +156,11 @@ def _train_step(args, model, data_loader, optimizer, momenturm_optimizer):
         X, y = _X.to(DEVICE), _y.to(DEVICE)
 
         # add stochastic label noise
-        y += args.sigma * torch.randn(y.size(), device=DEVICE)
+        label_noise = torch.randn(y.size(), device=DEVICE)
+        y += args.sigma * label_noise
 
         y_pred = model(X)
-        loss_per_input = -torch.sum(F.log_softmax(y_pred, dim=1) * y, dim=1)
+        loss_per_input = torch.sum(F.log_softmax(y_pred, dim=1) * y, dim=1)
         batch_loss = -torch.mean(loss_per_input)
 
         # backpropagation
@@ -168,7 +169,7 @@ def _train_step(args, model, data_loader, optimizer, momenturm_optimizer):
         momenturm_optimizer.step()
 
         batch_predictions += y.argmax(dim=1).eq(y_pred.argmax(dim=1)).tolist()
-        batch_losses += loss_per_input.detach().tolist()
+        batch_losses.append(batch_loss.item())
 
     return sum(batch_losses) / len(batch_losses), sum(batch_predictions) / len(batch_predictions)
 
