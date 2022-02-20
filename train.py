@@ -141,7 +141,7 @@ def main(args):
     if not args.abliation:
         start_training(args,*training_bag)
     else: # if abliation study
-        abs_study = Abliation_study(parameter="sigma")
+        abs_study = Abliation_study(args,parameter="sigma")
         abs_study.run_experiment(args, training_bag)
         abs_study.plot_experiment(args)
 
