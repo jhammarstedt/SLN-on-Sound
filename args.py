@@ -27,5 +27,13 @@ def get_args():
     parser.add_argument("--expdir", "-e", type=str, help="directory for logging and checkpointing")
 
     parser.add_argument('--loglevel', default='info', help='Provide logging level. Example --loglevel debug, default=warning')
+    
+    # For running abliation study
+    parser.add_argument("--abliation",type=bool,default=False,help="Set to true to conduct abliation study")
+    
+    parser.add_argument('--parameter', type=str, default="sigma", 
+    help="What parameter to change in the ablation study: only sigma so far")
+    parser.add_argument('--runs', type=int, default=3, help='number of runs for ablation study')
 
+    
     return parser.parse_args()

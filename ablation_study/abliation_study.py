@@ -1,5 +1,5 @@
 import argparse
-from train_sound_SLN import run
+#from train_sound_SLN import run
 import json
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,21 +8,22 @@ Script to run the ablation study on the CIFAR data to reproduce the results in t
 
 """
 
-#TODO: ADD support to run the Run function with different parameters
+#TODO: ADD support for SLN
 
-parser = argparse.ArgumentParser()
-parser.description("This script is used to run abliation study on CIFAR-10")
-parser.add_argument('--runs', type=int, default=3, help='number of runs')
-parser.add_argument('--epochs', type=int, default=200, help='number of epochs')
-parser.add_argument('--parameter', type=str, default=None, 
-help="What parameter to change in the ablation study: only sigma so far")
+# parser = argparse.ArgumentParser()
+# parser.description("This script is used to run abliation study on CIFAR-10")
+# parser.add_argument('--runs', type=int, default=3, help='number of runs')
+# parser.add_argument('--epochs', type=int, default=200, help='number of epochs')
+# parser.add_argument('--parameter', type=str, default=None, 
+# help="What parameter to change in the ablation study: only sigma so far")
 
-sigmas = [0,0.2,0.4,0.6,0.8,1] #sigmas to test on
-types = ["symmetric","asymmetric"] # we have implementation for these two types
 
-def run_experiment(args):
-    print("Running experiment with the following parameters: ")
-    print(args)
+def run_experiment(args,training_bag):
+    sigmas = [0,0.2,0.4,0.6,0.8,1] #sigmas to test on
+    types = ["symmetric","asymmetric"] # we have implementation for these two types
+
+    print("Running ablation study with {} runs and {} epochs".format(args.runs,args.epochs))
+    #print(args)
     if args.parameter == "sigma":
         
         logs = {t:{f"sigma_{s}":{f"run_{i}":{} for i in range(args.runs)} for s in sigmas} for t in types}#ex {symmetric: {sigma_0.2: {run_3: {"training":[],"test":[]}}}}
@@ -31,16 +32,32 @@ def run_experiment(args):
         for t in types:
             for sigma in sigmas:
                 for i in range(args.runs):
-                    run_result = run_result = run(sigma=sigma, epochs=args.epochs, experiment=True, type=t) 
-                    logs[t][f"sigma_{sigma}"][f"run_{i}"].update(run_result)
+                    #run_result = run(sigma=sigma, epochs=args.epochs, experiment=True, type=t) 
+                    training_log = start_training(args,*training_bag)
+                    
+                    data = {
+                        'train_loss': training_log.train_loss,
+                        'train_acc': training_log.train_acc,
+                        'test_loss': training_log.test_loss,
+                        'test_acc': training_log.test_acc,
+                        'test_loss_NoEMA': training_log.test_loss_NoEMA,
+                        'test_acc_NoEMA': training_log.test_acc_NoEMA
+                    }
+
+
+                    logs[t][f"sigma_{sigma}"][f"run_{i}"].update(data)
                     with open('ablation_study/results/training_log.json', 'w') as f: #saving results after each run just in case
                         json.dump(logs, f)
 
+
+        plot_experiment(args,types,sigmas)
     else:
         raise NotImplementedError("Only sigma is implemented for now")
 
 
-def plot_experiment(args):
+def plot_experiment(args,types,sigmas):
+    #types = ["symmetric","asymmetric"] # we have implementation for these two types
+    #sigmas = [0,0.2,0.4,0.6,0.8,1] #sigmas to test on
 
     compiled_results = {t:[(int,float) for s in range(len(sigmas))] for t in types} # ex {symmetric: [(0,0.2),(1,0.4),(2,0.6),(3,0.8),(4,1)]}
 
@@ -78,9 +95,9 @@ def plot_experiment(args):
 
 
 
-def main():
-    args = parser.parse_args()
-    run_experiment(args)
-    plot_experiment(args)
-if __name__ == '__main__':
-    main()
+# def main():
+#     args = parser.parse_args()
+#     run_experiment(args)
+#     plot_experiment(args)
+# if __name__ == '__main__':
+#     main()
