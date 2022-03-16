@@ -2,7 +2,7 @@ import os
 import torch
 import numpy as np
 from torch import nn
-from fsd50_src.src.models import densenet, resnet, crnn, vgglike
+from fsd50_src.src.models import resnet
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 from fsd50_src.src.data.dataset import SpectrogramDataset
@@ -25,28 +25,12 @@ def model_helper(opt):
             pretrained_flag = True
             print("I'm doing stuff")
             ckpt = torch.load(opt['pretrained_path'])
-            
+
         else:
             pretrained_flag = False
         num_classes = opt['num_classes']
 
-    if opt['arch'] == "vgglike":
-        model = vgglike.VGGLike(num_classes)
-    elif "crnn" in opt['arch']:
-        model = crnn.CRNN(num_classes=num_classes)
-    elif "densenet" in opt['arch']:
-        depth = opt['model_depth']
-        if depth == 121:
-            model = densenet.densenet121(num_classes=num_classes)
-        elif depth == 161:
-            model = densenet.densenet161(num_classes=num_classes)
-        elif depth == 169:
-            model = densenet.densenet169(num_classes=num_classes)
-        elif depth == 201:
-            model = densenet.densenet201(num_classes=num_classes)
-        else:
-            raise ValueError("Invalid value {} of depth for densenet arch".format(depth))
-    elif "resnet" == opt['arch']:
+    if "resnet" == opt['arch']:
         assert opt['model_depth'] in [10, 18, 34, 50, 101, 152, 200]
         if opt['model_depth'] == 18:
             model = resnet.resnet18(
@@ -76,10 +60,6 @@ def model_helper(opt):
             fc_in = model.fc.in_features
             print("pretrained loading: ", model.load_state_dict(ckpt))
             model.fc = nn.Linear(fc_in, opt['num_classes'])
-        elif "densenet" == opt['arch']:
-            fc_in = model.classifier.in_features
-            print("pretrained loading: ", model.load_state_dict(ckpt))
-            model.classifier = nn.Linear(fc_in, opt['num_classes'])
         elif "cifar_resnet" == opt['arch']:
             fc_in = model.linear.in_features
             print("pretrained loading: ", model.load_state_dict(ckpt))
