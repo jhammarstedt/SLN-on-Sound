@@ -212,8 +212,8 @@ def _train_step(args, model, data_loader, optimizer, momenturm_optimizer):
         with torch.cuda.amp.autocast():
             y_pred = model(X)
             # batch_loss = F.cross_entropy(y_pred, y)
-            loss_per_input = torch.sum(F.log_softmax(y_pred, dim=1) * y, dim=1).cuda()
-            batch_loss = -torch.mean(loss_per_input).cuda()
+            loss_per_input = torch.sum(F.log_softmax(y_pred, dim=1) * y, dim=1)
+            batch_loss = -torch.mean(loss_per_input)
 
         # backpropagation
         batch_loss.backward()
@@ -222,6 +222,8 @@ def _train_step(args, model, data_loader, optimizer, momenturm_optimizer):
 
         batch_predictions += y.argmax(dim=1).eq(y_pred.argmax(dim=1)).sum()
         batch_losses += X.size(0) * batch_loss
+
+        break
 
     return batch_losses.item() / len(data_loader.dataset), batch_predictions.item() / len(data_loader.dataset)
 
@@ -235,7 +237,7 @@ def _test_step(model, data_loader):
         for _X, _y in tqdm(data_loader):
             X, y = _X.to(DEVICE), _y.to(DEVICE)
             y_pred = model(X)
-            batch_losses += F.cross_entropy(y_pred, y, reduction='none').tolist()
+            batch_losses += torch.sum(-F.log_softmax(y_pred, dim=1) * y, dim=1).tolist()
             batch_predictions += y.eq(y_pred.argmax(dim=1)).tolist()
 
     return sum(batch_losses) / len(batch_losses), sum(batch_predictions) / len(batch_predictions)
