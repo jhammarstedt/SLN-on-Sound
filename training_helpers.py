@@ -27,6 +27,14 @@ class BatchRecord:
         return self.batch_losses.item() / self.len, self.batch_predictions.item() / self.len
 
 def SLN(y, device, sigma):
+    """
+    Add stochastic label noise
+
+    params:
+        y: (batch_size, num_class)
+        device: cuda or cpu
+        sigma: float
+    """
     label_noise = torch.randn(y.size(), device=device)
     return y + sigma * label_noise
 
@@ -52,6 +60,11 @@ def get_cifar_data(args):
     return train_loader, train_set, test_loader, train_eval_loader
 
 def get_FSD_data(args):
+    """
+    Data loader from FSD50k dataset, with preprocessing
+    
+    """
+
     collate_fn = _collate_fn_multiclass
     mode = "multiclass"
 
