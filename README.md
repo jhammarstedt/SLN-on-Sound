@@ -9,9 +9,10 @@ sound dataset.
 # Credits
 
 Sound data preprocessing and networks are credited to: https://github.com/SarthakYadav/fsd50k-pytorch
-Minor edits and workarounds were added to the code to make it work as intended in this scenario
 
-Wide ResNet structure as per the original code: https://github.com/chenpf1025/SLN
+Some edits and workarounds were added to the code to make it work as intended in this scenario
+
+Wide ResNet structure similar to the original implementation: https://github.com/chenpf1025/SLN
 
 
 ## Authors:
