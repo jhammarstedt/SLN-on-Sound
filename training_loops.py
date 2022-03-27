@@ -94,7 +94,7 @@ def _train_step_sound(args, model, data_loader, optimizer, momenturm_optimizer, 
         else:
             one_hot = _y
 
-        X, y = _X.to(DEVICE), one_hot.to(device)
+        X, y = _X.to(device), one_hot.to(device)
 
         # add stochastic label noise
         y = SLN(y, device, args.sigma)

@@ -29,7 +29,10 @@ def main(args):
         # original_train_Y = np.eye(args.num_class)[train_set.targets]
         original_train_Y = train_set.targets.copy()
 
-
+        """
+        Model: Trained with SGD
+        Momentum model: Moving average of the weights in the regular model
+        """
         model, momentum_model = get_models(args, DEVICE) 
         momentum_model.load_state_dict(model.state_dict()) # initialize momentum model with the same weights as the original model
 
@@ -56,6 +59,7 @@ def main(args):
 
         train_step, test_step = _train_step_sound, _test_step_sound # get training and testing functions
 
+    #Set optimizer for the for the original model
     optimizer = torch.optim.SGD(
         model.parameters(),
         lr=args.lr,
@@ -69,16 +73,19 @@ def main(args):
     for epoch in range(1, args.epochs + 1):
         epoch_start = time.time()
 
-        # Check if it is time to start label correction
-        if epoch >= args.correction:
-            args.sigma = 0.
-            label_correction(args, momentum_model, train_eval_loader, train_set, original_train_Y)
+        # Apply label correction if applicable
+        train_loader = label_correction(args, epoch, momentum_model, train_eval_loader, train_set, original_train_Y)
 
         # Perform train step and test on both momentum model and regular model
-        train_loss, train_acc = train_step(args, model, train_loader, optimizer, optimizer_momentum, DEVICE)
-        test_loss, test_acc = test_step(momentum_model, test_loader, DEVICE)
-        test_loss_NoEMA, test_acc_NoEMA = test_step(model, test_loader, DEVICE)
+        train_loss, train_acc = train_step(args, model, train_loader, optimizer, optimizer_momentum, DEVICE)  # train step
+        
+        # test step for momentum model
+        test_loss, test_acc = test_step(momentum_model, test_loader, DEVICE) 
+        
+        # test step for the regular model
+        test_loss_NoEMA, test_acc_NoEMA = test_step(model, test_loader, DEVICE) 
 
+        #Log training and test results
         training_log.save_epoch(train_loss, train_acc, test_loss, test_acc, test_loss_NoEMA, test_acc_NoEMA)
         training_log.print_last_epoch(epoch=epoch, logger=log, time=time.time() - epoch_start)
 
