@@ -102,17 +102,25 @@ def get_FSD_models(args):
 
     return model, momentum_model
 
-def label_correction(args, momentum_model, train_eval_loader, train_set, original_labels, device):
+def label_correction(args,epoch, momentum_model, train_eval_loader, train_set, original_labels, device):
+    """
+    Here we will run the lbl correction if the epoch over the threshold
+    """
+    
+    if epoch < args.correction: # No correction
+        return get_data_loader(train_set, args.batch_size, shuffle=True, num_workers=args.num_workers)
+    
     log.debug('Correcting labels ...')
-    model.eval()
+    args.sigma =0.
+    momentum_model.eval()
 
     predictions = []
     losses = []
 
     with torch.no_grad():
-        for X, Y in data_loader:
+        for X, Y in train_eval_loader:
             X, Y = X.to(device), Y.to(device)
-            Y_pred = model(X)
+            Y_pred = momentum_model(X)
             output = F.softmax(Y_pred, dim=1)
             loss = -torch.sum(torch.log(output) * Y, dim=1)
 
